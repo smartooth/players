@@ -6,15 +6,15 @@ Requires at least: 3.0.0
 Tested up to: 3.0
 Stable tag: 1.0
 
-Feature media using various content players. Each player can be customized with many options and effects. This plugin creates a custom post type called Players which integrates with the Media Library. To embed a player into a post or page, simply insert [player id=""] anywhere in the post or page content.
+Feature media using various content players. Each player can be customized with many options and effects.
 
 == Description ==
 
-Feature media using various content players. Each player can be customized with many options and effects. This plugin creates a custom post type called Players which integrates with the Media Library. To embed a player into a post or page, simply insert `[player id=""]` anywhere in the post or page content.
+This plugin creates a custom post type called Players which integrates with the Media Library. To embed a player into a post or page, simply insert `[player id=""]` anywhere in the post or page content.
 
 == Installation ==
 
-1. Upload `players` to the `/wp-content/plugins/` directory
+1. Upload `Players` to the `/wp-content/plugins/` directory
 2. Activate the plugin through the 'Plugins' menu in WordPress
 
 == Frequently Asked Questions ==

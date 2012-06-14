@@ -1,0 +1,7 @@
+File in question: jquery.nivo.slider.js
+
+Check Line _373_ of current version (2.6) as this modification should be applied to the next version upon updating... unless this functionality has been added in the update.
+
+The modification forces Nivo's animations to respect the direction the slider is advancing... the most logical functionality from a UI perspective.
+
+Also, transfer custom.css to the updated set of nivo slider files.

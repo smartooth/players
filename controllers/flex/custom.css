@@ -1,0 +1,19 @@
+.flexslider div, 
+.flexslider span, 
+.flexslider p, 
+.flexslider ol, 
+.flexslider ul, 
+.flexslider li {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+
+.flexslider ol, 
+.flexslider ul {list-style: none;}
+
+body {background: red;}
+.flexslider {width: 80%; max-width: 800px; margin: 0 auto;}

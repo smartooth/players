@@ -1,0 +1,1 @@
+Transfer custom.css to the updated set of FlexSlider slider files.

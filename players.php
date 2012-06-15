@@ -383,10 +383,10 @@ function sb_player_video_metadata( $data, $post_id ) {
 				foreach( $queue as $task => $opts ) {
 					// validate important variables
 					if (!is_numeric( $opts['width'] ) || !is_numeric( $opts['height'] ) 
-						|| $opts['width'] < 1 || $opts['height'] < 1						// invalid width or height
+						|| $opts['width'] < 1.0 || $opts['height'] < 1.0						// invalid width or height
 						|| $opts['width'] > $width || $opts['height'] > $height) continue;	// don't encode if task width or height is greater than source
-					if(empty( $opts['bitrate'] )) $opts['bitrate'] = 512; //ceil( ($opts['width'] + $opts['height']) / 3 ); // guess best bitrate
-					$opts['duration'] = ($sample ? 30 : $opts['duration']); // force duration to be 30 seconds duration if sampling
+					if(empty( $opts['bitrate'] )) $opts['bitrate'] = ceil( ($opts['width'] + $opts['height']) / 3.0 ); // guess best bitrate
+					$opts['duration'] = ($sample ? 30.0 : $opts['duration']); // force duration to be 30 seconds duration if sampling
 					if (empty( $opts['duration'] ) || $opts['duration'] > $duration) $opts['duration'] = $duration; // don't encode for longer than duration of source
 					
 					// force integers
@@ -461,7 +461,7 @@ function sb_player_video_metadata( $data, $post_id ) {
 					}
 					array_unshift( $options, '-s ' . $sizing ); // add sizing to the beginning
 					if ($opts['duration'] !== $duration) $options[] = '-t ' . $opts['duration']; // only add -t if necessary
-					$options[] = ' -b ' . $opts['bitrate'] . 'k';
+					$options[] = ' -b:v ' . $opts['bitrate'] . 'k';
 					$options = implode( ' ', $options ); // finish options
 					$ext .= '_' . $opts['bitrate'] . 'kbits_' . $opts['duration'] . 'secs'; // finish ext
 					
@@ -473,17 +473,15 @@ function sb_player_video_metadata( $data, $post_id ) {
 						'duration'	=> $opts['duration'],
 						'mime_types'	=> array() );
 					
-					$audio = (($pathinfo['extension'] == 'mov') ? '-acodec libfaac' : '-acodec copy');
-					
 					$encode_queue = array( 
 						'video/mp4'	=> array( 
 										'extension'	=> 'mp4',
 										'commands'	=> array( 
-														'-an -pass 1 -threads 2 -vcodec libx264 -flags +loop+mv4 -cmp 256 -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -me_method hex -subq 7 -trellis 1 -refs 5 -bf 3 -flags2 +bpyramid+wpred+mixed_refs+dct8x8 -coder 1 -me_range 16 -g 250 -keyint_min 25 -sc_threshold 40 -i_qfactor 0.71 -qmin 10 -qmax 51 -qdiff 4',
-														'-acodec copy -pass 2 -threads 2 -vcodec libx264 -flags +loop+mv4 -cmp 256 -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -me_method hex -subq 7 -trellis 1 -refs 5 -bf 3 -flags2 +bpyramid+wpred+mixed_refs+dct8x8 -coder 1 -me_range 16 -g 250 -keyint_min 25 -sc_threshold 40 -i_qfactor 0.71 -qmin 10 -qmax 51 -qdiff 4' ) ), // -acodec copy
+														'-an -pass 1 -threads 2 -vcodec libx264',
+														'-acodec copy -pass 2 -threads 2 -vcodec libx264' ) ),
 						'video/flv'	=> array( 
 										'extension'	=> 'flv',
-										'commands'	=> array( '-b ' . $opts['bitrate'] . 'k -acodec libmp3lame -ar 44100 -vcodec flv -f flv' ) ) );
+										'commands'	=> array( '-acodec libmp3lame -ar 44100 -vcodec flv -f flv' ) ) );
 					
 					$ffmpeg_queue = sb_player_get_option( 'ffmpeg_queue' );
 					

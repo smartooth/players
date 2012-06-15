@@ -81,6 +81,8 @@ function lazyload_footer() {
 				<?php endif;
 				$wp_styles->done[] = $handle;
 				unset( $wp_styles->to_do[$key] );
+			} else {
+				$end--;
 			}
 		}
 	}
@@ -130,9 +132,14 @@ function lazyload_footer() {
 		
 			$wp_scripts->done[] = $handle;
 			unset( $wp_scripts->to_do[$key] );
+		} else {
+			$end--;
 		}
 	}
+	
 	if ($end === 0) echo '<script type="text/javascript">;(function($) { $(window).load(function() { $(document).trigger( "scriptsLoaded" ); }); })(jQuery);</script>';
+	
+	echo "\n\n";
 }
 add_action( 'wp_footer', 'lazyload_footer' );
 ?>

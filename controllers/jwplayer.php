@@ -15,7 +15,7 @@ function jwplayer_options_section() {
 	// could echo a description if necessary...
 }
 
-// JW PLayer Options Page Admin Notices
+// JW Player Options Page Admin Notices
 function jwplayer_options_admin_notices() {
 	if (!sb_player_verify_post_type() || !isset( $_GET['page'] ) || ($_GET['page'] !== 'options') || !isset( $_GET['settings-updated'] )) return;
 	
@@ -48,7 +48,7 @@ function jwplayer_licensed_field() {
 
 // Handle JW Player "crossdomain" Options Page Field @TODO: setup ajax request
 function jwplayer_crossdomain_field() {	?>
-	<span id="jwplayer_no_crossdomain"><?php echo _e( 'No', 'startbox' ); ?> <code>crossdomain.xml</code> <?php echo _e( 'file located in server root.', 'startbox' ); ?></span>
+	<span id="jwplayer_no_crossdomain"><?php _e( 'No', 'startbox' ); ?> <code>crossdomain.xml</code> <?php _e( 'file located in server root.', 'startbox' ); ?></span>
 	<a class="button" id="jwplayer_crossdomain" href="javascript:void(0);"><span id="jwplayer_crossdomain_action"></span> crossdomain.xml</a>
 	<span class="description"><?php _e( 'This file allows other sites to embed your videos.', 'startbox' ); ?> <a href="http://www.longtailvideo.com/support/jw-player/jw-player-for-flash-v5/12541/crossdomain-file-loading-restrictions" target="_blank"><?php _e( 'more info', 'startbox' ); ?></a></span>
 <?php }
@@ -159,7 +159,7 @@ function jwplayer_filter_controllers( $defaults ) {
 	return $defaults; // don't forget to return after filtering
 }
 
-// Cycle Callback
+// JW Player Callback
 function sb_player_jwplayer_shortcode( $uid, $title, $dimensions, $options, $attachments ) {
 	$is_playlist = (count( $attachments ) > 1 ? true : false);
 	$result = $playlist = $extra = '';

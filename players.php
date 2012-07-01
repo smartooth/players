@@ -1137,7 +1137,11 @@ function sb_player_path( $path ) {
 
 // Utility: Return String Between
 function sb_player_string_between( $string, $start, $end, $case_insensitive = false ) {
-	if ($case_insensitive) $string = strtolower( $string );
+	if( $case_insensitive ) {
+		$string = strtolower( $string );
+		$start = strtolower( $start );
+		$end = strtolower( $end );
+	}
 	
 	$parts = explode( $start, $string );
 	
@@ -2088,8 +2092,8 @@ function sb_player_post_admin_head() {
 ?>
 	<script type="text/javascript">
 		//<![CDATA[
-		;(function($) {
-			$(document).ready(function(){
+		;(function( $ ) {
+			$(document).ready( function(){
 				var attachments = <?php echo json_encode( $attachments ); ?>;
 				var controllers = <?php echo json_encode( $sb_player_controllers ); ?>;
 				// sortable container resize

@@ -103,7 +103,7 @@ add_action( 'template_redirect', 'jwplayer_template_redirect' );
 add_filter( 'sb_player_controllers', 'jwplayer_filter_controllers', 12 );
 function jwplayer_filter_controllers( $defaults ) {
 	$defaults['jwplayer'] = array( 
-		'nicename'	=> 'JW Player',
+		'nicename'	=> 'JW Player v1.7',
 		'website'		=> 'http://www.longtailvideo.com/players/jw-flv-player/',
 		'description'	=> __( 'A video playlist that uses JW Player which uses Flash if available but falls back to HTML5 for mobile browsers.', 'startbox' ),
 		'mime_types' 	=> array( 'video/flv', 'video/mp4' ),

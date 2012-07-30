@@ -1,61 +1,61 @@
 <?php
 // Filter default player controller array
-add_filter( 'sb_player_controllers', 'colorbox_filter_controllers', 12 );
+add_filter( 'players_controllers', 'colorbox_filter_controllers', 12 );
 function colorbox_filter_controllers( $defaults ) {
 	$defaults['colorbox'] = array( 
 		'nicename'	=> 'Colorbox',
 		'website'		=> 'http://colorpowered.com/colorbox/',
-		'description'	=> __( 'The title given to the player will be inserted into the post or page as a link that, when clicked, will spawn an image slideshow in a lightbox window.', 'startbox' ),
+		'description'	=> __( 'The title given to the player will be inserted into the post or page as a link that, when clicked, will spawn an image slideshow in a lightbox window.', 'players' ),
 		'mime_types' 	=> array( 'image/jpeg', 'image/png', 'image/gif' ),
-		'shortcode_cb'	=> 'sb_player_colorbox_shortcode',
+		'shortcode_cb'	=> 'players_colorbox_shortcode',
 		'options'		=> array(
 							'section0'		=> array( 
 												'type'		=> 'section',
-												'title'		=> __( 'Pause Timer', 'startbox' ),
-												'desc'		=> __( 'How long, in milliseconds, to pause on an item before transitioning.', 'startbox' ) ),
+												'title'		=> __( 'Pause Timer', 'players' ),
+												'desc'		=> __( 'How long, in milliseconds, to pause on an item before transitioning.', 'players' ) ),
 							'pause'			=> array( 
 												'type'		=> 'input',
 												'size'		=> 4,
-												'units'		=> __( 'milliseconds', 'startbox' ),
+												'units'		=> __( 'milliseconds', 'players' ),
 												'default'		=> 3000,
 												'validate'	=> 'numbers' ),
 							'section1'		=> array( 
 												'type'		=> 'section',
-												'title'		=> __( 'General Options', 'startbox' ) ),
+												'title'		=> __( 'General Options', 'players' ) ),
 							'autoplay'		=> array( 
 												'type'		=> 'checkbox',
-												'label'		=> __( 'Auto Play', 'startbox' ),
+												'label'		=> __( 'Auto Play', 'players' ),
 												'default'	=> 1 ),
 							'overlayclose'		=> array( 
 												'type'		=> 'checkbox',
-												'label'		=> __( 'Overlay Close', 'startbox' ),
+												'label'		=> __( 'Overlay Close', 'players' ),
 												'hint'		=> __( 'If checked, the lightbox will close when the overlay is clicked.' ),
 												'default'		=> 1 ),
 							'section2'		=> array( 
 												'type'		=> 'section',
-												'title'		=> __( 'Style Options', 'startbox' ) ),
+												'title'		=> __( 'Style Options', 'players' ) ),
 							'theme'			=> array( 
 												'type'		=> 'select',
-												'label'		=> __( 'Theme', 'startbox' ),
+												'label'		=> __( 'Theme', 'players' ),
 												'options'		=> array(
-																'minimalblack'		=> __( 'Minimal Black', 'startbox' ),
-																'minimalwhite'		=> __( 'Minimal White', 'startbox' ),
-																'fullwhite'		=> __( 'Full White', 'startbox' ),
-																'white'			=> __( 'White', 'startbox' ),
-																'gray'			=> __( 'Gray', 'startbox' ) ),
+																'minimalblack'		=> __( 'Minimal Black', 'players' ),
+																'minimalwhite'		=> __( 'Minimal White', 'players' ),
+																'fullwhite'		=> __( 'Full White', 'players' ),
+																'white'			=> __( 'White', 'players' ),
+																'gray'			=> __( 'Gray', 'players' ) ),
 												'default'		=> 'minimalblack' ),
 							'transition'		=> array( 
 												'type'		=> 'select',
-												'label'		=> __( 'Transition Effect', 'startbox' ),
+												'label'		=> __( 'Transition Effect', 'players' ),
 												'options'		=> array(
 																'none'	=> 'None',
 																'fade'	=> 'Fade' ),
 												'default'		=> 'fade' ),
 							'opacity'			=> array( 
 												'type'		=> 'input',
-												'label'		=> __( 'Overlay Opacity', 'startbox' ),
+												'label'		=> __( 'Overlay Opacity', 'players' ),
 												'size'		=> 4,
-												'units'		=> __( '%', 'startbox' ),
+												'units'		=> __( '%', 'players' ),
 												'default'		=> 85,
 												'validate'	=> 'numbers' ) ) );
 		
@@ -63,7 +63,7 @@ function colorbox_filter_controllers( $defaults ) {
 }
 
 // Cycle Callback
-function sb_player_colorbox_shortcode( $uid, $title, $dimensions, $options, $slides ) {
+function players_colorbox_shortcode( $uid, $title, $dimensions, $options, $slides ) {
 	global $wp_styles;
 	
 	// lazy load
@@ -93,14 +93,14 @@ function sb_player_colorbox_shortcode( $uid, $title, $dimensions, $options, $sli
 	}
 	
 	// re-init colorbox if it was initialized before styles were appended to head
-	sb_player_footerjs( 'cb_init',
+	players_footerjs( 'cb_init',
 		'var elems = $("#cboxOverlay, #colorbox");
 		if( elems.length ) {
 			elems.remove();
 			$.colorbox.init();
 		}' );
 	
-	sb_player_footerjs( 'id_' . $uid,
+	players_footerjs( 'id_' . $uid,
 		'$("a[rel=\'slider-' . $uid . '\']").colorbox({
 			transition:"' . $options['transition'] . '", 
 			innerWidth:"' . $dimensions['width'] . 'px", 
@@ -109,8 +109,8 @@ function sb_player_colorbox_shortcode( $uid, $title, $dimensions, $options, $sli
 			photo:true,
 			slideshow:true,
 			slideshowSpeed:' . $options['pause'] . ',
-			slideshowAuto:' . sb_player_tf( $options['autoplay'] ) . ',
-			overlayClose:' . sb_player_tf( $options['overlayclose'] ) . '
+			slideshowAuto:' . players_tf( $options['autoplay'] ) . ',
+			overlayClose:' . players_tf( $options['overlayclose'] ) . '
 		});' );
 	
 	return $result; // finally, output the resulting code

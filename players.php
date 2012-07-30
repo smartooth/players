@@ -26,18 +26,19 @@ License: GPL2
 
 // Deactivate Plugin If PHP Version Is Less Than 5.2
 if( version_compare( PHP_VERSION, '5.2', '<' ) ) {
-	if( is_admin() && (!defined( 'DOING_AJAX' ) || !DOING_AJAX) ) {
-		require_once ABSPATH . '/wp-admin/includes/plugin.php';
+	if( is_admin() && !(defined( 'DOING_AJAX' ) || DOING_AJAX) ) {
+		require_once admin_url( 'includes/plugin.php' );
 		deactivate_plugins( __FILE__ );
-		wp_die( __( 'Players requires PHP 5.2 or higher, as does WordPress 3.2 and higher. The plugin has now disabled itself.', 'startbox' ) . 
-			' <a href="javascript:history.go(-1);">' . __( 'go back', 'startbox' ) . ' &rarr;</a>' );
+		wp_die( __( 'Players requires PHP 5.2 or higher, as does WordPress 3.2 and higher. The plugin has now disabled itself.', 'players' ) . 
+			' <a href="javascript:history.go( -1 );">' . __( 'go back', 'players' ) . ' &rarr;</a>' );
 	} else {
 		return;
 	}
 }
 
 // Include Lazy Load Plugin
-if (!function_exists( 'lazyload_template_redirect' )) include trailingslashit( dirname( __FILE__ ) ) . 'assets/lazyload/lazyload.php'; // move to init?
+if (!function_exists( 'lazyload_template_redirect' )) 
+	include 'assets/lazyload/lazyload.php'; // @TODO: move to init?
 
 // Include Default Controllers
 include 'controllers/jwplayer.php';
@@ -46,42 +47,42 @@ include 'controllers/nivo.php';
 include 'controllers/flex.php';
 
 // Define Globals
-$sb_player_video_icon = false;
-$sb_player_units = $sb_player_used_ids = $sb_player_footerjs = array();
-$sb_player_controllers = apply_filters( 'sb_player_controllers', array() );
-$sb_player_interface = apply_filters( 'sb_player_interface', array( 
+$players_video_icon = false;
+$players_units = $players_used_ids = $players_footerjs = array();
+$players_controllers = apply_filters( 'players_controllers', array() );
+$players_interface = apply_filters( 'players_interface', array( 
 	'sizes' 			=> array( 
-						'max' 	=> __( 'Largest Image', 'startbox' ), 
-						'min' 	=> __( 'Smallest Image', 'startbox' ), 
-						'custom' 	=> __( 'Custom', 'startbox' ) ),
+						'max' 	=> __( 'Largest Image', 'players' ), 
+						'min' 	=> __( 'Smallest Image', 'players' ), 
+						'custom' 	=> __( 'Custom', 'players' ) ),
 	'link_text' 		=> 'http://',
 	'color' 			=> '#FFFFFF',
 	'media_width' 		=> 300,
 	'media_height' 	=> 188,
 	'filter_width'		=> 60,
 	'filter_height' 	=> 60 ) );
-$sb_player_timthumb_path = apply_filters( 'sb_player_timthumb_path', plugins_url( 'assets/timthumb/timthumb.php', __FILE__ ) );
-$sb_player_options = apply_filters( 'sb_player_options', 'players_options' );
-$sb_player_options_page = apply_filters( 'sb_player_options_page', 'options' );
+$players_timthumb_path = apply_filters( 'players_timthumb_path', plugins_url( 'assets/timthumb/timthumb.php', __FILE__ ) );
+$players_options = apply_filters( 'players_options', 'players_options' );
+$players_options_page = apply_filters( 'players_options_page', 'options' );
 $file_version = '1.0.0'; // should match the "Version" definition in the header of this file
-//delete_option( 'sb_player' ); // hack for testing: resets version
-$user_version = sb_player_get_option( 'version' );
+//delete_option( 'players_options' ); // hack for testing: resets version
+$user_version = players_get_option( 'version' );
 
 // First Run Function On Plugin Activation
-function sb_player_install() {
-	sb_player_update_option( 'automatic', 'enabled' );
-	sb_player_update_option( 'screenshot', 50 );
-	sb_player_update_option( 'sequence', 0 );
-	sb_player_update_option( 'ffmpeg_path', 'ffmpeg' );
-	sb_player_update_option( 'flvtool2_path', 'flvtool2' );
-	sb_player_update_option( 'qtfaststart_path', 'qt-faststart' );
+function players_install() {
+	players_update_option( 'automatic', 'enabled' );
+	players_update_option( 'screenshot', 50 );
+	players_update_option( 'sequence', 0 );
+	players_update_option( 'ffmpeg_path', 'ffmpeg' );
+	players_update_option( 'flvtool2_path', 'flvtool2' );
+	players_update_option( 'qtfaststart_path', 'qt-faststart' );
 	
-	sb_player_update_option( 'ffmpeg_queue', array() );
+	players_update_option( 'ffmpeg_queue', array() );
 }
-register_activation_hook( __FILE__, 'sb_player_install' );
+register_activation_hook( __FILE__, 'players_install' );
 
 // Updgrade Function
-function sb_player_upgrade() {
+function players_upgrade() {
 	global $file_version, $user_version;
 	
 	/*
@@ -89,22 +90,22 @@ function sb_player_upgrade() {
 		// coming soon...
 	}
 	*/
-	sb_player_update_option( 'version', $file_version ); // update version to be up-to-date
+	players_update_option( 'version', $file_version ); // update version to be up-to-date
 }
-if (version_compare( $user_version, $file_version, '<' )) sb_player_upgrade();
+if (version_compare( $user_version, $file_version, '<' )) players_upgrade();
 
 /************************************************************************************************
  *									BEGIN VIDEO								 *
  ************************************************************************************************/
  
  // Verify That Exec Is Supported
- function sb_player_verify_exec() {
+ function players_verify_exec() {
 	return function_exists( 'exec' );
  }
  
- // Uses exec() But Return A String Like sb_player_shell_exec() Would
- function sb_player_shell_exec( $command ) {
-	if (!sb_player_verify_exec()) return '';
+ // Uses exec() But Return A String Like players_shell_exec() Would
+ function players_shell_exec( $command ) {
+	if (!players_verify_exec()) return '';
 	
 	$output = array();
 	exec( $command, $output );
@@ -112,46 +113,46 @@ if (version_compare( $user_version, $file_version, '<' )) sb_player_upgrade();
  }
  
 // Determine FFMPEG Capabilities
-function sb_player_get_ffmpeg_capabilities() {
-	$ffmpeg_help = sb_player_shell_exec( ($ffmpeg_path = sb_player_get_option( 'ffmpeg_path' )) . ' -h' ); // should work on all versions
-	$ffmpeg_filters = sb_player_shell_exec( $ffmpeg_path . ' -filters' );
+function players_get_ffmpeg_capabilities() {
+	$ffmpeg_help = players_shell_exec( ($ffmpeg_path = players_get_option( 'ffmpeg_path' )) . ' -h' ); // should work on all versions
+	$ffmpeg_filters = players_shell_exec( $ffmpeg_path . ' -filters' );
 	
 	$capabilities = array();	
-	$capabilities['crop_filter'] = sb_player_tf( stristr( $ffmpeg_help, 'Removed, use the crop filter instead' ) ); // are -crop* arguments deprecated?
-	$capabilities['new_crop_syntax'] = sb_player_tf( stristr( $ffmpeg_filters, 'width:height:x:y' ) ); // is crop filter syntax the old x:y:w:h or the new w:h:x:y?
-	$capabilities['fpre'] = sb_player_tf( stristr( $ffmpeg_help, '-fpre' ) ); // supports -fpre?
+	$capabilities['crop_filter'] = players_tf( stristr( $ffmpeg_help, 'Removed, use the crop filter instead' ) ); // are -crop* arguments deprecated?
+	$capabilities['new_crop_syntax'] = players_tf( stristr( $ffmpeg_filters, 'width:height:x:y' ) ); // is crop filter syntax the old x:y:w:h or the new w:h:x:y?
+	$capabilities['fpre'] = players_tf( stristr( $ffmpeg_help, '-fpre' ) ); // supports -fpre?
 	
 	return $capabilities; // return version type and string
 }
 
 // Verify That FFMPEG Is Working
-function sb_player_verify_ffmpeg() {
-	if ($ffmpeg_path = sb_player_get_option( 'ffmpeg_path' ))
-		return sb_player_string_between( sb_player_shell_exec( $ffmpeg_path . ' -version' ), 'ffmpeg ', "\n", true ); // return version string or false
+function players_verify_ffmpeg() {
+	if ($ffmpeg_path = players_get_option( 'ffmpeg_path' ))
+		return players_string_between( players_shell_exec( $ffmpeg_path . ' -version' ), 'ffmpeg ', "\n", true ); // return version string or false
 	else
 		return false;
 }
 
 // Verify That FLVTOOL2 Is Working
-function sb_player_verify_flvtool2() {
-	if ($flvtool2_path = sb_player_get_option( 'flvtool2_path' ))
-		return sb_player_string_between( sb_player_shell_exec( $flvtool2_path . ' -H' ), 'flvtool2 ', "\n", true ); // return version string or false
+function players_verify_flvtool2() {
+	if ($flvtool2_path = players_get_option( 'flvtool2_path' ))
+		return players_string_between( players_shell_exec( $flvtool2_path . ' -H' ), 'flvtool2 ', "\n", true ); // return version string or false
 	else
 		return false;
 }
 
 // Verify That QT-FASTSTART Is Working
-function sb_player_verify_qtfaststart() {
-	if ($qtfaststart_path = sb_player_get_option( 'qtfaststart_path' ))
-		return sb_player_tf( stristr( sb_player_shell_exec( $qtfaststart_path ), 'Usage:' ) ); // return true or false
+function players_verify_qtfaststart() {
+	if ($qtfaststart_path = players_get_option( 'qtfaststart_path' ))
+		return players_tf( stristr( players_shell_exec( $qtfaststart_path ), 'Usage:' ) ); // return true or false
 	else
 		return false;
 }
 
 // Determine Video Duration
-function sb_player_get_video_duration( $video ) {
+function players_get_video_duration( $video ) {
 	if( file_exists( $video ) ) {
-		$stats = sb_player_shell_exec( sb_player_get_option( 'ffmpeg_path' ) . ' -i ' . $video . ' -vstats 2>&1' );
+		$stats = players_shell_exec( players_get_option( 'ffmpeg_path' ) . ' -i ' . $video . ' -vstats 2>&1' );
 		
 		preg_match_all( '/Duration: ([0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9])/', $stats, $matches, PREG_PATTERN_ORDER );
 		
@@ -171,9 +172,9 @@ function sb_player_get_video_duration( $video ) {
 }
 
 // Determine Video Dimensions (Returns Array)
-function sb_player_get_video_dimensions( $video ) {
+function players_get_video_dimensions( $video ) {
 	if( file_exists( $video ) ) {
-		$stats = sb_player_shell_exec( sb_player_get_option( 'ffmpeg_path' ) . ' -i ' . $video . ' -vstats 2>&1' );
+		$stats = players_shell_exec( players_get_option( 'ffmpeg_path' ) . ' -i ' . $video . ' -vstats 2>&1' );
 		
 		$stats = str_replace( basename( $video ), '', $stats ); // remove filename from result incase of dimension string in filename
 		
@@ -195,27 +196,27 @@ function sb_player_get_video_dimensions( $video ) {
 	}
 }
 
-//sb_player_update_option( 'ffmpeg_queue', array() );
+//players_update_option( 'ffmpeg_queue', array() );
 /* TEMPORARY TESTING FUNCTION(S) - delete me
-function sb_player_temp() {
+function players_temp() {
 	echo '<pre>';
-	var_dump( sb_player_get_option( 'ffmpeg_queue' ) );
+	var_dump( players_get_option( 'ffmpeg_queue' ) );
 	echo '</pre>';
 }
-add_action( 'admin_notices', 'sb_player_temp' );*/
+add_action( 'admin_notices', 'players_temp' );*/
 
 // Convert Time (HH:MM:SS.MS) To Seconds
-function sb_player_time_to_seconds( $time ) {
+function players_time_to_seconds( $time ) {
 	$time = explode( ':', $time, 3 );
 	return ((int)$time[0] * 3600) + ((int)$time[1] * 60) + (int)substr( $time[2], 0, 2 );
 }
 
 // Check For And Execute Any Enqueued Encodes
-function sb_player_do_queue() {
-	$debug = sb_player_tf( sb_player_get_option( 'debug' ) );
-	$queue = sb_player_get_option( 'ffmpeg_queue' );
+function players_do_queue() {
+	$debug = players_tf( players_get_option( 'debug' ) );
+	$queue = players_get_option( 'ffmpeg_queue' );
 	
-	if (empty( $queue ) || !is_array( $queue )) return sb_player_update_option( 'ffmpeg_queue', array() ); // don't go any further
+	if (empty( $queue ) || !is_array( $queue )) return players_update_option( 'ffmpeg_queue', array() ); // don't go any further
 	
 	$index = -1;
 	foreach( $queue as $num => $item ) {
@@ -226,7 +227,7 @@ function sb_player_do_queue() {
 	}
 	
 	if( $index == -1 ) { // nothing being encoded, kick encoding off	
-		sb_player_update_option( 'ffmpeg_process', sb_player_bg_exec( $queue[0]['command'] ) );		
+		players_update_option( 'ffmpeg_process', players_bg_exec( $queue[0]['command'] ) );		
 		$queue[0]['progress'] = 0.0;
 	} else {
 		if( $log = @file_get_contents( $queue[$index]['log'] ) ) {
@@ -234,9 +235,9 @@ function sb_player_do_queue() {
 			$time_parts = explode( ' ', array_pop( $time_parts ) );
 			$time = $time_parts[0];
 			$time = ($time == '10000000000.00' ? '0.01' : $time); // fix for an ffmpeg quirk
-			$time = (stristr( $time, ':' ) ? sb_player_time_to_seconds( $time ) : $time); // newer versions use hh:mm:ss.ms
+			$time = (stristr( $time, ':' ) ? players_time_to_seconds( $time ) : $time); // newer versions use hh:mm:ss.ms
 			
-			if( !sb_player_process_exists( sb_player_get_option( 'ffmpeg_process' ) ) ) {
+			if( !players_process_exists( players_get_option( 'ffmpeg_process' ) ) ) {
 				if (!$debug) @unlink( $queue[$index]['log'] ); // delete the log file used to snag times if not debugging
 				
 				$cleanup = $queue[$index]['cleanup'];
@@ -249,24 +250,24 @@ function sb_player_do_queue() {
 		}
 	}
 	
-	sb_player_update_option( 'ffmpeg_queue', array_values( $queue ) ); // array_values() to fix keys after unset()
+	players_update_option( 'ffmpeg_queue', array_values( $queue ) ); // array_values() to fix keys after unset()
 }
-if (!isset( $_POST['do_action'] ) || $_POST['do_action'] !== 'cancel') sb_player_do_queue(); // call this at every possible page load (sort of like a constant wp-cron)
+if (!isset( $_POST['do_action'] ) || $_POST['do_action'] !== 'cancel') players_do_queue(); // call this at every possible page load (sort of like a constant wp-cron)
 
 // Initiate Encoding And Update Video Metadata
-function sb_player_video_metadata( $data, $post_id ) {
+function players_video_metadata( $data, $post_id ) {
 	global $pagenow;
 	
 	$post = get_post( $post_id );
 	
-	if( isset( $post ) && sb_player_is_video( $post->post_mime_type ) ) { // only execute the following for video files
+	if( isset( $post ) && players_is_video( $post->post_mime_type ) ) { // only execute the following for video files
 		// do some location checking
 		switch( is_numeric( $_POST['id'] ) ) {
 			case false: // from media-new.php
-				if (sb_player_get_option( 'automatic' ) !== 'enabled') return $data; // cancel encode
+				if (players_get_option( 'automatic' ) !== 'enabled') return $data; // cancel encode
 				break;
 			case true: // from uploads.php, Encode/Re-Encode/Delete 
-				sb_player_video_delete( $post_id );
+				players_video_delete( $post_id );
 				if( $_POST['do_action'] == 'delete' ) {
 					unset( $data['encodes'] );
 					unset( $data['screenshots'] );
@@ -277,10 +278,10 @@ function sb_player_video_metadata( $data, $post_id ) {
 		}
 		
 		$source = array(
-			'path'	=> sb_player_path( get_attached_file( $post_id ) ),
+			'path'	=> players_path( get_attached_file( $post_id ) ),
 			'url'	=> wp_get_attachment_url( $post_id ) ); // path and url to source video
 		
-		if( $dimensions = sb_player_get_video_dimensions( $source['path'] ) ) {
+		if( $dimensions = players_get_video_dimensions( $source['path'] ) ) {
 			extract( $dimensions ); // source width and height
 			
 			if( is_numeric( $width ) && is_numeric( $height ) ) {
@@ -294,7 +295,7 @@ function sb_player_video_metadata( $data, $post_id ) {
 						'height'		=> $height,
 						'mime_types'	=> $mobile ) );
 									
-				$profiles = apply_filters( 'sb_player_profiles', (($width / $height) < 1.5 ? array( 'standard' ) : array( 'widescreen' )) ); // default profiles
+				$profiles = apply_filters( 'players_profiles', (($width / $height) < 1.5 ? array( 'standard' ) : array( 'widescreen' )) ); // default profiles
 				
 				if( in_array( 'standard', $profiles ) ) { // 4:3 profile
 					$queue = array_merge( $queue, array( 
@@ -329,22 +330,22 @@ function sb_player_video_metadata( $data, $post_id ) {
 				}
 				
 				// define a bunch of variables
-				$queue = apply_filters( 'sb_player_queue', $queue ); // use this filter to modify or add profiles
-				$ffmpeg_path = sb_player_get_option( 'ffmpeg_path' );
-				$flvtool2_path = sb_player_get_option( 'flvtool2_path' );
-				$capabilities = sb_player_get_option( 'ffmpeg_capabilities' );
-				$preset = sb_player_get_option( 'ffmpeg_preset' );
-				$duration = sb_player_get_video_duration( $source['path'] ); // source duration
-				$screenshot = ($duration * (sb_player_get_option( 'screenshot' ) / 100));
-				$sequence = sb_player_get_option( 'sequence' );
+				$queue = apply_filters( 'players_queue', $queue ); // use this filter to modify or add profiles
+				$ffmpeg_path = players_get_option( 'ffmpeg_path' );
+				$flvtool2_path = players_get_option( 'flvtool2_path' );
+				$capabilities = players_get_option( 'ffmpeg_capabilities' );
+				$preset = players_get_option( 'ffmpeg_preset' );
+				$duration = players_get_video_duration( $source['path'] ); // source duration
+				$screenshot = ($duration * (players_get_option( 'screenshot' ) / 100));
+				$sequence = players_get_option( 'sequence' );
 				$pathinfo = pathinfo( $source['path'] );
 				$urlinfo = pathinfo( $source['url'] );
-				$path = $data['directory'] = sb_player_path( trailingslashit( $pathinfo['dirname'] ) . trailingslashit( $pathinfo['filename'] ) );
+				$path = $data['directory'] = players_path( trailingslashit( $pathinfo['dirname'] ) . trailingslashit( $pathinfo['filename'] ) );
 				$url = trailingslashit( $urlinfo['dirname'] ) . trailingslashit( $pathinfo['filename'] );
 				$data['encodes'] = $data['screenshots'] = array();
-				$debug = sb_player_tf( sb_player_get_option( 'debug' ) );
+				$debug = players_tf( players_get_option( 'debug' ) );
 				$d_log = $path . 'debug.log'; // set debug log file
-				$sample = sb_player_tf( sb_player_get_option( 'sample' ) );
+				$sample = players_tf( players_get_option( 'sample' ) );
 				
 				clearstatcache();
 				if (!is_dir( $path )) mkdir( $path ); // make directory if needed
@@ -371,12 +372,12 @@ function sb_player_video_metadata( $data, $post_id ) {
 					$ss_exec[] = sprintf( $ss_cmd, number_format( $percentage, 3 ), $data['screenshots'][$i]['path'] );
 				}
 				if( $pagenow == 'async-upload.php' ) {
-					sb_player_debug_log( $d_log, $ss_exec[0] );
-					sb_player_shell_exec( array_shift( $ss_exec ) ); // wait for first image to exist
+					players_debug_log( $d_log, $ss_exec[0] );
+					players_shell_exec( array_shift( $ss_exec ) ); // wait for first image to exist
 				}
 				if( !empty( $ss_exec ) ) {
-					sb_player_debug_log( $d_log, ($ss_cmd = implode( ' && ', $ss_exec )) ); // this could be a race condition with ffmpeg_process but haven't seen any evidence yet...
-					sb_player_bg_exec( $ss_cmd ); // do the rest
+					players_debug_log( $d_log, ($ss_cmd = implode( ' && ', $ss_exec )) ); // this could be a race condition with ffmpeg_process but haven't seen any evidence yet...
+					players_bg_exec( $ss_cmd ); // do the rest
 				}
 				
 				// loop through each enqueued profile
@@ -483,7 +484,7 @@ function sb_player_video_metadata( $data, $post_id ) {
 										'extension'	=> 'flv',
 										'commands'	=> array( '-acodec libmp3lame -ar 44100 -vcodec flv -f flv' ) ) );
 					
-					$ffmpeg_queue = sb_player_get_option( 'ffmpeg_queue' );
+					$ffmpeg_queue = players_get_option( 'ffmpeg_queue' );
 					
 					foreach( $encode_queue as $mime_type => $encode ) {
 						if (!empty( $opts['mime_types'] ) && !in_array( $mime_type, $opts['mime_types'] )) continue; // don't do this mime type
@@ -499,7 +500,7 @@ function sb_player_video_metadata( $data, $post_id ) {
 						$count = count( $encode['commands'] );
 						
 						foreach( $encode['commands'] as $index => $command ) {
-							$out_file = ($count > 1 ? ' -f rawvideo ' . (sb_player_is_windows() ? 'nul' : '/dev/null') : '"' . $file_path . '"');
+							$out_file = ($count > 1 ? ' -f rawvideo ' . (players_is_windows() ? 'nul' : '/dev/null') : '"' . $file_path . '"');
 							
 							$command = sprintf( '%s -i "%s" %s %s -y %s', $ffmpeg_path, $source['path'], $options, $command, $out_file );
 							
@@ -507,15 +508,15 @@ function sb_player_video_metadata( $data, $post_id ) {
 							if( $index == $count-- ) {
 								switch( $mime_type ) {
 									case 'video/mp4':
-										if (sb_player_verify_qtfaststart())
-											$cleanup = array( 'sb_player_qtfaststart', $file_path, $d_log ); // use qt-faststart
+										if (players_verify_qtfaststart())
+											$cleanup = array( 'players_qtfaststart', $file_path, $d_log ); // use qt-faststart
 										else
-											$cleanup = array( 'sb_player_moovrelocator', $file_path, $d_log ); // fallback to moovrelocator
+											$cleanup = array( 'players_moovrelocator', $file_path, $d_log ); // fallback to moovrelocator
 										break;
 									
 									case 'video/flv':
 										// add flvtool2 cleanup command (and output to debug file if debugging)
-										if (sb_player_verify_flvtool2()) $cleanup = array( 'sb_player_bg_exec', $flvtool2_path . ' -UP "' . $file_path . ($debug ? '" >> "' . $d_log . '"' : '"') );
+										if (players_verify_flvtool2()) $cleanup = array( 'players_bg_exec', $flvtool2_path . ' -UP "' . $file_path . ($debug ? '" >> "' . $d_log . '"' : '"') );
 										break;
 								}
 							}
@@ -538,16 +539,16 @@ function sb_player_video_metadata( $data, $post_id ) {
 							}
 							
 							if( $dont_add || ($exists = file_exists( $file_path )) ) { // command already enqueued or file already exists, for instance when source matches a profile
-								sb_player_debug_log( $d_log, 'Skipped: ' . $file_path . 
-									', already enqueued: ' . sb_player_tf( $dont_add, 'string' ) . ', file exists: ' . sb_player_tf( $exists, 'string' ) );
+								players_debug_log( $d_log, 'Skipped: ' . $file_path . 
+									', already enqueued: ' . players_tf( $dont_add, 'string' ) . ', file exists: ' . players_tf( $exists, 'string' ) );
 							} else {
-								sb_player_debug_log( $d_log, $command . ($cleanup == '' ? '' : "\n\n" . print_r( $cleanup, true )) );
+								players_debug_log( $d_log, $command . ($cleanup == '' ? '' : "\n\n" . print_r( $cleanup, true )) );
 								array_push( $ffmpeg_queue, $to_add );
 							}
 						}
 					} // end $encode_queue foreach
 					
-					sb_player_update_option( 'ffmpeg_queue', $ffmpeg_queue ); // update the ffmpeg queue
+					players_update_option( 'ffmpeg_queue', $ffmpeg_queue ); // update the ffmpeg queue
 					
 					$data['encodes'][$task] = $encode_data; // add to encode metadata
 				} // end $queue foreach
@@ -561,11 +562,11 @@ function sb_player_video_metadata( $data, $post_id ) {
 	
 	return $data; // set attachment metadata
 }
-add_filter( 'wp_update_attachment_metadata', 'sb_player_video_metadata', 10, 2 );
+add_filter( 'wp_update_attachment_metadata', 'players_video_metadata', 10, 2 );
 
 // Add Debug Log Entry
-function sb_player_debug_log( $d_log, $contents, $append = FILE_APPEND ) {
-	if (!sb_player_tf( sb_player_get_option( 'debug' ) )) return false; // debug disabled
+function players_debug_log( $d_log, $contents, $append = FILE_APPEND ) {
+	if (!players_tf( players_get_option( 'debug' ) )) return false; // debug disabled
 	
 	$log_divider = "\n\n" . str_repeat( '-', 80 ) . "\n\n";
 	
@@ -575,42 +576,42 @@ function sb_player_debug_log( $d_log, $contents, $append = FILE_APPEND ) {
 }
 
 // Do qt-faststart
-function sb_player_qtfaststart( $file_path, $d_log ) {
-	$qtfaststart_path = sb_player_get_option( 'qtfaststart_path' );
-	$debug = sb_player_get_option( 'debug' );
+function players_qtfaststart( $file_path, $d_log ) {
+	$qtfaststart_path = players_get_option( 'qtfaststart_path' );
+	$debug = players_get_option( 'debug' );
 	
 	$pathinfo = pathinfo( $file_path );
 	$temp_path = $pathinfo['dirname'] . '/' . $pathinfo['filename'] . '_qtfs' . $pathinfo['extension'];
 	
-	sb_player_shell_exec( sprintf( '%s "%s" "%s"', $qtfaststart_path, $file_path, $temp_path ) . ($debug ? ' >> "' . $d_log . '"' : '') );
+	players_shell_exec( sprintf( '%s "%s" "%s"', $qtfaststart_path, $file_path, $temp_path ) . ($debug ? ' >> "' . $d_log . '"' : '') );
 	
 	@unlink( $file_path );
 	rename( $temp_path, $file_path );
 }
 
 // Moov Relocator
-function sb_player_moovrelocator( $file_path, $d_log ) {
+function players_moovrelocator( $file_path, $d_log ) {
 	require_once 'assets/moovrelocator/Moovrelocator.class.php';
 	
 	$moovrelocator = Moovrelocator::getInstance(); // Instantiate Moovrelocator
 	
-	$failed = __( 'Failed to relocate moov for', 'startbox' ) . ' ' . $file_path . ': ';	
-	if (($result = $moovrelocator->setInput( $file_path )) !== true) return sb_player_debug_log( $d_log, $failed . $result ); // read file, preprocess (parse atoms/boxes)
-	if (($result = $moovrelocator->setOutput( $file_path )) !== true) return sb_player_debug_log( $d_log, $failed . $result ); // set the output filename and path
+	$failed = __( 'Failed to relocate moov for', 'players' ) . ' ' . $file_path . ': ';	
+	if (($result = $moovrelocator->setInput( $file_path )) !== true) return players_debug_log( $d_log, $failed . $result ); // read file, preprocess (parse atoms/boxes)
+	if (($result = $moovrelocator->setOutput( $file_path )) !== true) return players_debug_log( $d_log, $failed . $result ); // set the output filename and path
 	if (($result = $moovrelocator->fix()) !== true) // moov positioning fix
-		 return sb_player_debug_log( $d_log, $failed . $result );
+		 return players_debug_log( $d_log, $failed . $result );
 	else
-		 return sb_player_debug_log( $d_log, __( 'Moov successfully relocated for', 'startbox' ) . ' ' . $file_path );
+		 return players_debug_log( $d_log, __( 'Moov successfully relocated for', 'players' ) . ' ' . $file_path );
 }
 
 // Delete All Conversions And Screenshots
-function sb_player_video_delete( $id ) {
+function players_video_delete( $id ) {
 	// remove from queue and terminate process if being encoded
-	if (sb_player_video_dequeue( $id )) sb_player_terminate_process( sb_player_get_option( 'ffmpeg_process' ) );
+	if (players_video_dequeue( $id )) players_terminate_process( players_get_option( 'ffmpeg_process' ) );
 	
 	clearstatcache();
 	
-	if( ($directory = sb_player_get_directory( $id )) && is_dir( $directory ) ) {
+	if( ($directory = players_get_directory( $id )) && is_dir( $directory ) ) {
 		foreach( scandir( $directory ) as $item ) {
 			if ($item == '.' || $item == '..') continue;
 			@unlink( trailingslashit( $directory ) . $item );
@@ -622,28 +623,28 @@ function sb_player_video_delete( $id ) {
 	
 	return false;
 }
-add_filter( 'delete_attachment', 'sb_player_video_delete', 10, 1 );
+add_filter( 'delete_attachment', 'players_video_delete', 10, 1 );
 
 // Return Encode Directory For A Video Attachment
-function sb_player_get_directory( $id ) {
+function players_get_directory( $id ) {
 	$metadata = wp_get_attachment_metadata( $id );		
 	return (is_string( $metadata['directory'] ) ? $metadata['directory'] : false);
 }
 
 // Return Screenshots For A Video Attachment
-function sb_player_get_screenshots( $id ) {
+function players_get_screenshots( $id ) {
 	$metadata = wp_get_attachment_metadata( $id );		
 	return (is_array( $metadata['screenshots'] ) ? $metadata['screenshots'] : false);
 }
 
 // Return All Encode Data For A Video Attachment
-function sb_player_get_encodes( $id, $mime_types = array() ) {
+function players_get_encodes( $id, $mime_types = array() ) {
 	$metadata = wp_get_attachment_metadata( $id );
 	if (!is_array( $encodes = $metadata['encodes'] )) return false;
 	
 	if( !empty( $mime_types ) ) { // filter allowed mime types
 		foreach( $encodes as $index => $encode ) {
-			if (!sb_player_verify_mime_types( array_keys( $encode['mime_types'] ), $mime_types )) unset( $encodes[$index] );
+			if (!players_verify_mime_types( array_keys( $encode['mime_types'] ), $mime_types )) unset( $encodes[$index] );
 		}
 	}
 	
@@ -651,7 +652,7 @@ function sb_player_get_encodes( $id, $mime_types = array() ) {
 }
 
 // Return Encode That Is Closest To Passed Dimensions
-function sb_player_select_encode_by_dimensions( $encodes, $width = 0, $height = 0 ) {
+function players_select_encode_by_dimensions( $encodes, $width = 0, $height = 0 ) {
 	$closest_match = array();
 	
 	foreach( $encodes as $encode ) {
@@ -679,7 +680,7 @@ function sb_player_select_encode_by_dimensions( $encodes, $width = 0, $height = 
 }
 
 // Return Encode That Is Closest To Passed Bitrate @TODO make this function...
-function sb_player_select_encode_by_bitrate( $encodes, $bitrate ) {
+function players_select_encode_by_bitrate( $encodes, $bitrate ) {
 	$closest_match = array();
 	
 	foreach( $encodes as $encode ) {		
@@ -690,14 +691,14 @@ function sb_player_select_encode_by_bitrate( $encodes, $bitrate ) {
 }
 
 // Return Encoded Video Thumbnail If It Exists
-function sb_player_encoded_icon( $orig, $type ) {
-	global $post, $sb_player_video_icon;
+function players_encoded_icon( $orig, $type ) {
+	global $post, $players_video_icon;
 	
-	if ($sb_player_video_icon) return $orig;
+	if ($players_video_icon) return $orig;
 		
 	$id = (isset( $post ) ? $post->ID : $_GET['attachment_id']);
 		
-	$screenshots = sb_player_get_screenshots( $id );
+	$screenshots = players_get_screenshots( $id );
 	
 	if( !empty( $screenshots ) ) {
 		switch( $type ) {
@@ -717,12 +718,12 @@ function sb_player_encoded_icon( $orig, $type ) {
 }
 
 // Filter Thumbnail/Icon On Uploads Page
-function sb_player_attachment_image_attributes( $attr, $attachment ) {
-	if( sb_player_is_video( $attachment->post_mime_type ) ) {
-		$icon = sb_player_encoded_icon( '', 'icon' );
+function players_attachment_image_attributes( $attr, $attachment ) {
+	if( players_is_video( $attachment->post_mime_type ) ) {
+		$icon = players_encoded_icon( '', 'icon' );
 		
 		if( $icon != '' ) {
-			$attr['src'] = sb_player_timthumb( $icon, 66, 60 );
+			$attr['src'] = players_timthumb( $icon, 66, 60 );
 			$attr['class'] .= ' encoded';
 		} else {
 			$attr['class'] .= ' not-encoded';
@@ -731,10 +732,10 @@ function sb_player_attachment_image_attributes( $attr, $attachment ) {
 	
 	return $attr;
 }
-add_filter( 'wp_get_attachment_image_attributes', 'sb_player_attachment_image_attributes', 10, 2 );
+add_filter( 'wp_get_attachment_image_attributes', 'players_attachment_image_attributes', 10, 2 );
 
 // Add To Head On Uploads Page
-function sb_player_upload_admin_head() {
+function players_upload_admin_head() {
 ?>
 	<style type="text/css">
 		.encoded, .not-encoded, .encoding {
@@ -785,13 +786,13 @@ function sb_player_upload_admin_head() {
 					if( num > 0 ) {
 						if( ($.inArray( id, a_ids ) == -1) && ($.inArray( id, c_ids ) == -1) ) {
 							if (prog == 0)
-								$('.status', obj).text( '<?php _e( 'Waiting for turn...', 'startbox' ); ?>' ).show();
+								$('.status', obj).text( '<?php _e( 'Waiting for turn...', 'players' ); ?>' ).show();
 							else
 								$('.status', obj).text( Math.round((prog / dur) * 100) + '% encoded (' + num + ' job' + (num > 1 ? 's' : '') + ' remaining)' ).show();
 							
 							$('.cancel', obj).show();
 							$('.new, .complete', obj).hide();
-							imgobj.attr( 'src', '<?php echo sb_player_video_icon(); ?>' ).width( 46 ).height( 60 ).removeClass( 'not-encoded encoded' ).addClass( 'encoding' );
+							imgobj.attr( 'src', '<?php echo players_video_icon(); ?>' ).width( 46 ).height( 60 ).removeClass( 'not-encoded encoded' ).addClass( 'encoding' );
 						}
 					} else {
 						if( imgobj.hasClass( 'encoding' ) || imgobj.hasClass( 'not-encoding' ) ) {							
@@ -799,7 +800,7 @@ function sb_player_upload_admin_head() {
 								imgobj.attr( 'src', response ).width( 66 ).height( 60 ).removeClass( 'not-encoded encoding' ).addClass( 'encoded' );
 								$('.new, .cancel', obj).hide();
 								$('.complete', obj).show();
-								$('.status', obj).text( '<?php _e( 'Encoding complete!', 'startbox' ); ?>' ).show();
+								$('.status', obj).text( '<?php _e( 'Encoding complete!', 'players' ); ?>' ).show();
 							});
 						} else if( initial && imgobj.hasClass( 'encoded' ) ) {
 							$('.status', obj).hide();
@@ -844,7 +845,7 @@ function sb_player_upload_admin_head() {
 			wait = true;
 			$.post( ajaxurl, { action: 'encode_from_upload', id: id, do_action: 'add' }, function( response ) {
 				$('.status', obj).text( response ).show();
-				imgobj.attr( 'src', '<?php echo sb_player_video_icon(); ?>' ).width( 46 ).height( 60 ).removeClass( 'not-encoded encoded' ).addClass( 'encoding' );
+				imgobj.attr( 'src', '<?php echo players_video_icon(); ?>' ).width( 46 ).height( 60 ).removeClass( 'not-encoded encoded' ).addClass( 'encoding' );
 				
 				wait = false;
 			});
@@ -853,7 +854,7 @@ function sb_player_upload_admin_head() {
 		function kill_icon( obj ) {
 			var imgobj = $('td.column-icon a img.attachment-80x60', obj);
 			
-			imgobj.attr( 'src', '<?php echo sb_player_video_icon(); ?>' );
+			imgobj.attr( 'src', '<?php echo players_video_icon(); ?>' );
 			imgobj.width( 46 ).height( 60 ).removeClass( 'encoded encoding' ).addClass( 'not-encoded' );
 		}
 		
@@ -865,7 +866,7 @@ function sb_player_upload_admin_head() {
 				var obj = $('#post-' + id);
 				
 				$('.new, .complete, .cancel', obj).hide();
-				$('.status', obj).text( '<?php _e( 'Sending request...', 'startbox' ); ?>' ).show();
+				$('.status', obj).text( '<?php _e( 'Sending request...', 'players' ); ?>' ).show();
 				
 				if ($(this).hasClass( 'encode_add' ))
 					a_ids.push( id );
@@ -890,81 +891,81 @@ function sb_player_upload_admin_head() {
 	</script>
 <?php
 }
-add_action( 'admin_head-upload.php', 'sb_player_upload_admin_head' );
+add_action( 'admin_head-upload.php', 'players_upload_admin_head' );
 
 // Filter Attachment Icon
-function sb_player_icon_dir( $dir ) {
-	return sb_player_encoded_icon( $dir, 'dir_path' );
+function players_icon_dir( $dir ) {
+	return players_encoded_icon( $dir, 'dir_path' );
 }
-add_filter( 'icon_dir', 'sb_player_icon_dir' );
+add_filter( 'icon_dir', 'players_icon_dir' );
 
 // Filter Attachment Icon
-function sb_player_icon_dir_uri( $dir ) {
-	return sb_player_encoded_icon( $dir, 'dir_uri' );
+function players_icon_dir_uri( $dir ) {
+	return players_encoded_icon( $dir, 'dir_uri' );
 }
-add_filter( 'icon_dir_uri', 'sb_player_icon_dir_uri' );
+add_filter( 'icon_dir_uri', 'players_icon_dir_uri' );
 
 // Filter Attachment Icon
-function sb_player_wp_mime_type_icon( $icon, $mime, $post_id ) {
-	return sb_player_encoded_icon( $icon, 'icon' );
+function players_wp_mime_type_icon( $icon, $mime, $post_id ) {
+	return players_encoded_icon( $icon, 'icon' );
 }
-add_filter( 'wp_mime_type_icon', 'sb_player_wp_mime_type_icon', 10, 3 );
+add_filter( 'wp_mime_type_icon', 'players_wp_mime_type_icon', 10, 3 );
 
 // Video Mime Icon Fix
-function sb_player_video_icon() {
-	global $sb_player_video_icon;
+function players_video_icon() {
+	global $players_video_icon;
 	 
-	$sb_player_video_icon = true;
+	$players_video_icon = true;
 	
 	$return = wp_mime_type_icon( 'video' );
 	
-	$sb_player_video_icon = false;
+	$players_video_icon = false;
 	
 	return $return;
 }
 
 // Initiate Custom Columns
-function sb_player_add_upload_columns( $columns ) {
+function players_add_upload_columns( $columns ) {
 	$new_columns = array();
 	
 	$i = 0;	
 	foreach( $columns as $key => $value ) {
 		$new_columns[$key] = $value;
 		
-		if ($i++ == 2) $new_columns['encode'] = __( 'Encode', 'startbox' );
+		if ($i++ == 2) $new_columns['encode'] = __( 'Encode', 'players' );
 	}
 	
 	return $new_columns;
 }
-add_filter( 'manage_media_columns', 'sb_player_add_upload_columns' );
+add_filter( 'manage_media_columns', 'players_add_upload_columns' );
 
 // Handle Custom Columns
-function sb_player_do_upload_columns( $column, $post_id )
+function players_do_upload_columns( $column, $post_id )
 {
 	switch( $column ) {
 		case 'encode':
 			$post = get_post( $post_id );
-			if( sb_player_is_video( $post->post_mime_type ) ) {
-				$encodes = sb_player_tf( sb_player_get_encodes( $post_id ) );
-				$encode_possible = sb_player_verify_ffmpeg();
+			if( players_is_video( $post->post_mime_type ) ) {
+				$encodes = players_tf( players_get_encodes( $post_id ) );
+				$encode_possible = players_verify_ffmpeg();
 				echo '<div class="complete hide-if-js">';
-				if ($encode_possible) echo '<a href="javascript:void(0);" class="encode_add">' . __( 'Re-Encode', 'startbox' ) . '</a> | ';
-				echo '<a href="javascript:void(0);" class="encode_delete">' . __( 'Delete Encodes', 'startbox' ) . '</a></div><div class="new' . ($encodes ? ' hide-if-js' : '') . '">';
+				if ($encode_possible) echo '<a href="javascript:void(0);" class="encode_add">' . __( 'Re-Encode', 'players' ) . '</a> | ';
+				echo '<a href="javascript:void(0);" class="encode_delete">' . __( 'Delete Encodes', 'players' ) . '</a></div><div class="new' . ($encodes ? ' hide-if-js' : '') . '">';
 				if ($encode_possible)
-					echo '<a href="javascript:void(0);" class="encode_add">' . __( 'Encode', 'startbox' ) . '</a>';
+					echo '<a href="javascript:void(0);" class="encode_add">' . __( 'Encode', 'players' ) . '</a>';
 				else 
-					echo __( 'The current path to', 'startbox' ) . ' FFMPEG ' . __( 'is invalid', 'startbox' );
+					echo __( 'The current path to', 'players' ) . ' FFMPEG ' . __( 'is invalid', 'players' );
 				echo '</div><div><span class="status' . ($encodes ? '' : ' hide-if-js') . '">' 
-					. __( 'Loading...', 'startbox' ) . '</span> <span class="cancel hide-if-js"><a href="javascript:void(0);" class="encode_cancel">' . __( 'cancel', 'startbox' ) . '</a></span></div>';
+					. __( 'Loading...', 'players' ) . '</span> <span class="cancel hide-if-js"><a href="javascript:void(0);" class="encode_cancel">' . __( 'cancel', 'players' ) . '</a></span></div>';
 			}
 			break;
 	}
 }
-add_action( 'manage_media_custom_column', 'sb_player_do_upload_columns', 1, 2 );
+add_action( 'manage_media_custom_column', 'players_do_upload_columns', 1, 2 );
 
 // Clear Items With Passed ID From Queue
-function sb_player_video_dequeue( $id ) {
-	$queue = sb_player_get_option( 'ffmpeg_queue' );
+function players_video_dequeue( $id ) {
+	$queue = players_get_option( 'ffmpeg_queue' );
 	
 	$result = ($queue[0]['id'] == $id); // was currently being encoded
 	
@@ -972,32 +973,32 @@ function sb_player_video_dequeue( $id ) {
 		if ($item['id'] == $id) unset( $queue[$index] );
 	}
 	
-	sb_player_update_option( 'ffmpeg_queue', array_values( $queue ) );
+	players_update_option( 'ffmpeg_queue', array_values( $queue ) );
 	
 	return $result;
 }
 
 // Encode From Media
-function sb_player_encode_from_upload() {
+function players_encode_from_upload() {
 	$post_id = $_POST['id'];
 	$action = $_POST['do_action'];
-	$process = sb_player_get_option( 'ffmpeg_process' );
+	$process = players_get_option( 'ffmpeg_process' );
 	
 	switch( $action ) {
 		case 'cancel':
-			sb_player_video_dequeue( $post_id ); // clear any items with the id from the queue
+			players_video_dequeue( $post_id ); // clear any items with the id from the queue
 			
-			sb_player_terminate_process( $process ); // terminate ffmpeg process
+			players_terminate_process( $process ); // terminate ffmpeg process
 			
 			$_POST['do_action'] = 'delete'; // set flag to delete files
 			
-			$result = __( 'Encoding canceled.', 'startbox' );
+			$result = __( 'Encoding canceled.', 'players' );
 			break;
 		case 'add':
-			$result = __( 'Added to queue...', 'startbox' );
+			$result = __( 'Added to queue...', 'players' );
 			break;
 		case 'delete':
-			$result = __( 'Encodings deleted.', 'startbox' );
+			$result = __( 'Encodings deleted.', 'players' );
 			break;
 	}
 	
@@ -1005,23 +1006,23 @@ function sb_player_encode_from_upload() {
 	
 	die( $result );
 }
-add_action( 'wp_ajax_encode_from_upload', 'sb_player_encode_from_upload' );
+add_action( 'wp_ajax_encode_from_upload', 'players_encode_from_upload' );
 
 // Encode Progress
-function sb_player_encode_progress() {
-	die( json_encode( sb_player_get_option( 'ffmpeg_queue' ) ) );
+function players_encode_progress() {
+	die( json_encode( players_get_option( 'ffmpeg_queue' ) ) );
 }
-add_action( 'wp_ajax_encode_progress', 'sb_player_encode_progress' );
+add_action( 'wp_ajax_encode_progress', 'players_encode_progress' );
 
 // Encode Icon
-function sb_player_encode_icon() {
-	$attr = sb_player_attachment_image_attributes( array(), (object)array( 'post_mime_type' => 'video' ) );
+function players_encode_icon() {
+	$attr = players_attachment_image_attributes( array(), (object)array( 'post_mime_type' => 'video' ) );
 	die( $attr['src'] );
 }
-add_action( 'wp_ajax_encode_icon', 'sb_player_encode_icon' );
+add_action( 'wp_ajax_encode_icon', 'players_encode_icon' );
 
 // Return Streamer Link
-function sb_player_streamer( $file_path ) {
+function players_streamer( $file_path ) {
 	return plugins_url( 'assets/streamer.php?file_path=', __FILE__ ) . $file_path;
 }
 
@@ -1030,16 +1031,16 @@ function sb_player_streamer( $file_path ) {
  ************************************************************************************************/
 
 // Utility: Verify PHP OS
-function sb_player_is_windows() {
+function players_is_windows() {
 	return (strpos( PHP_OS, 'WIN' ) === 0);
 }
 
 // Utility: Exec In Background On Both Windows And *nix (returns pid)
-function sb_player_bg_exec( $cmd ) {
-	$cmd = sb_player_path( $cmd );
+function players_bg_exec( $cmd ) {
+	$cmd = players_path( $cmd );
 	
-	if( sb_player_is_windows() ) {
-		pclose( popen( 'start /B "bg" ' . sb_player_nullify_command( $cmd ), 'r') );
+	if( players_is_windows() ) {
+		pclose( popen( 'start /B "bg" ' . players_nullify_command( $cmd ), 'r') );
 		
 		// get the pid
 		$imagename = substr( $cmd, 0, strpos( $cmd, ' ' ) );
@@ -1049,24 +1050,24 @@ function sb_player_bg_exec( $cmd ) {
 		
 		return (is_numeric( $pid[1] ) ? (int)$pid[1] : -1); // return pid or -1
 	} else {	
-		return exec( sb_player_nullify_command( $cmd ) . ' & echo $! & disown' ); // @TODO make sure this returns the pid
+		return exec( players_nullify_command( $cmd ) . ' & echo $! & disown' ); // @TODO make sure this returns the pid
 	}
 }
 
 // Utility: Set stdout And stderr To Null If Not Set
-function sb_player_nullify_command( $cmd ) {
-	$null = (sb_player_is_windows() ? 'nul' : '/dev/null');
+function players_nullify_command( $cmd ) {
+	$null = (players_is_windows() ? 'nul' : '/dev/null');
 	return $cmd . (!stristr( $cmd, '2>' ) ? ' 2> ' . $null : '') . (!stristr( str_replace( '2>', '', $cmd ), '>' ) ? ' > ' . $null : '');
 }
 
 // Utility: Verify A Process Exists
-function sb_player_process_exists( $pid ) {
+function players_process_exists( $pid ) {
 	if (!is_numeric( $pid )) return false;
 	
 	$pid = (int)$pid;
 	
-	if( sb_player_is_windows() ) {
-		if (!stristr( sb_player_shell_exec( 'TASKLIST /NH /FO "CSV" /FI "pid eq ' . $pid . '"' ), 'INFO: No task' )) return true;
+	if( players_is_windows() ) {
+		if (!stristr( players_shell_exec( 'TASKLIST /NH /FO "CSV" /FI "pid eq ' . $pid . '"' ), 'INFO: No task' )) return true;
 	} else {
 		exec( 'ps ' . $pid, $process_state );
 		if (count( $process_state ) >= 2) return true;
@@ -1076,15 +1077,15 @@ function sb_player_process_exists( $pid ) {
 }
 
 // Utility: Terminate A Process
-function sb_player_terminate_process( $pid ) {
-	if (!sb_player_process_exists( $pid )) return false;
+function players_terminate_process( $pid ) {
+	if (!players_process_exists( $pid )) return false;
 
 	$pid = (int)$pid;
 	
-	if( sb_player_is_windows() ) {			
-		sb_player_shell_exec( 'TASKKILL /F /PID ' . $pid );
+	if( players_is_windows() ) {			
+		players_shell_exec( 'TASKKILL /F /PID ' . $pid );
 	} else {
-		sb_player_shell_exec( 'kill -KILL ' . $pid );
+		players_shell_exec( 'kill -KILL ' . $pid );
 	}
 	
 	sleep( 1 ); // allow time for process to be closed
@@ -1093,7 +1094,7 @@ function sb_player_terminate_process( $pid ) {
 }
 
 // Utility: Verify Post Type
-function sb_player_verify_post_type() {
+function players_verify_post_type() {
 	global $post_type;
 	
 	if (isset( $_GET['post_type'] ) && $_GET['post_type'] == 'player'
@@ -1103,40 +1104,40 @@ function sb_player_verify_post_type() {
 }
 
 // Utility: Generate Shortcode Input
-function sb_player_embed_input( $post_id ) {
+function players_embed_input( $post_id ) {
 	return '<input class="text urlfield" readonly="readonly" 
 		value="[player id=&quot;' . $post_id . '&quot;]" type="text">';
 }
 
 // Utility: Sort By Order
-function sb_player_sort_order( $a, $b ) {
+function players_sort_order( $a, $b ) {
 	if ($a['order'] == $b['order']) return 0;
 	return ($a['order'] < $b['order'] ? -1 : 1);
 }
 
 // Utility: Verify Player ID
-function sb_player_verify_id( $id ) {
-	global $sb_player_used_ids;
+function players_verify_id( $id ) {
+	global $players_used_ids;
 	
-	while (in_array( $id, $sb_player_used_ids )) $id++;
+	while (in_array( $id, $players_used_ids )) $id++;
 	
-	array_push( $sb_player_used_ids, $id );
+	array_push( $players_used_ids, $id );
 	
 	return $id;
 }
 
 // Utility: Verify A URL
-function sb_player_validate_url( $url ) {
+function players_validate_url( $url ) {
 	return (bool)preg_match( "/^(http|https|ftp):\/\/([A-Z0-9][A-Z0-9_-]*(?:\.[A-Z0-9][A-Z0-9_-]*)+):?(\d+)?\/?/i", $url );
 }
 
 // Utility: Escape Path
-function sb_player_path( $path ) {
+function players_path( $path ) {
 	return str_replace( '\\', '/', trim( $path ) );
 }
 
 // Utility: Return String Between
-function sb_player_string_between( $string, $start, $end, $case_insensitive = false ) {
+function players_string_between( $string, $start, $end, $case_insensitive = false ) {
 	if( $case_insensitive ) {
 		$string = strtolower( $string );
 		$start = strtolower( $start );
@@ -1154,7 +1155,7 @@ function sb_player_string_between( $string, $start, $end, $case_insensitive = fa
 }
 
 // Utility: Return True Or False
-function sb_player_tf( $val, $type = 'int' ) {
+function players_tf( $val, $type = 'int' ) {
 	switch( $type ) {
 		case 'int':
 			return (empty( $val ) ? 0 : 1);
@@ -1169,7 +1170,7 @@ function sb_player_tf( $val, $type = 'int' ) {
 }
 
 // Utility: Generate A Checkbox
-function sb_player_checkbox( $value, $label, $name, $checked = '', $class ) {
+function players_checkbox( $value, $label, $name, $checked = '', $class ) {
 	return '<p class="less-margin' . (!empty( $class ) ? ' ' . $class : '') . '">
 		<input type="checkbox" name="' . $name . '[' . $value . ']" id="' . $name . '[' . $value . ']" 
 		value="' . $value . '"' . ($value == $checked ? 'checked="checked"' : '') . ' /> 
@@ -1177,43 +1178,43 @@ function sb_player_checkbox( $value, $label, $name, $checked = '', $class ) {
 }
 
 // Utility: Generate A Radio
-function sb_player_radio( $value, $key, $name, $checked = '' ) {
+function players_radio( $value, $key, $name, $checked = '' ) {
 	return '<p class="less-margin"><input type="radio" name="' . $name . '" id="' . $name . '[' . $value . ']" 
 		value="' . $value . '"' . ($value == $checked ? 'checked="checked"' : '') . ' /> 
 		<label for="' . $name . '[' . $value . ']">' . $key . '</label></p>';
 }
 
 // Utility: Resize Image With Timthumb
-function sb_player_timthumb( $url, $width, $height, $align = 'c', $zc = 1, $q = 100 ) {
-	global $sb_player_timthumb_path;
+function players_timthumb( $url, $width, $height, $align = 'c', $zc = 1, $q = 100 ) {
+	global $players_timthumb_path;
 	
 	if( is_numeric( $url ) ) {
 		$attachment_image_src = wp_get_attachment_image_src( $url, 'full' );
 		$url = $attachment_image_src[0];
 	}
 	
-	return $sb_player_timthumb_path . '?src=' . $url . '&amp;w=' . $width . '&amp;h=' . $height . 
+	return $players_timthumb_path . '?src=' . $url . '&amp;w=' . $width . '&amp;h=' . $height . 
 		'&amp;a=' . $align . '&amp;zc=' . $zc . '&amp;q=' . $q;
 }
 
 // Plugin Initialization
-function sb_player_init() {
+function players_init() {
 	// Add custom post type
 	register_post_type( 'player', array(
 		'labels' 				=> array(
-									'name' 				=> __( 'Players', 'startbox' ),
-									'singular_name' 		=> __( 'Player', 'startbox' ),
-									'add_new' 			=> __( 'Add New', 'startbox' ),
-									'add_new_item' 		=> __( 'Add New Player', 'startbox' ),
-									'edit_item' 			=> __( 'Edit Player', 'startbox' ),
-									'new_item' 			=> __( 'New Player', 'startbox' ),
-									'view_item' 			=> __( 'View Player', 'startbox' ),
-									'search_items' 		=> __( 'Search Players', 'startbox' ),
-									'not_found' 			=> __( 'No players found', 'startbox' ),
-									'not_found_in_trash' 	=> __( 'No players found in Trash', 'startbox' ), 
+									'name' 				=> __( 'Players', 'players' ),
+									'singular_name' 		=> __( 'Player', 'players' ),
+									'add_new' 			=> __( 'Add New', 'players' ),
+									'add_new_item' 		=> __( 'Add New Player', 'players' ),
+									'edit_item' 			=> __( 'Edit Player', 'players' ),
+									'new_item' 			=> __( 'New Player', 'players' ),
+									'view_item' 			=> __( 'View Player', 'players' ),
+									'search_items' 		=> __( 'Search Players', 'players' ),
+									'not_found' 			=> __( 'No players found', 'players' ),
+									'not_found_in_trash' 	=> __( 'No players found in Trash', 'players' ), 
 									'parent_item_colon' 	=> '' ),
-		'label' 				=> __( 'Players', 'startbox' ),
-		'singular_label' 		=> __( 'Player', 'startbox' ),
+		'label' 				=> __( 'Players', 'players' ),
+		'singular_label' 		=> __( 'Player', 'players' ),
 		'public' 				=> true,
 		'exclude_from_search' 	=> true,
 		'show_ui' 			=> true,
@@ -1226,50 +1227,50 @@ function sb_player_init() {
 		'supports' 			=> array( 'title' ),
 		'menu_position' 		=> 5,
 		'show_in_nav_menus' 	=> true,
-		'register_meta_box_cb' 	=> 'sb_player_meta_box_callback' ) );
+		'register_meta_box_cb' 	=> 'players_meta_box_callback' ) );
 }
-add_action( 'init', 'sb_player_init' );
+add_action( 'init', 'players_init' );
 
 // Admin Init
-function sb_player_admin_init() {
-	global $sb_player_options, $sb_player_options_page;
+function players_admin_init() {
+	global $players_options, $players_options_page;
 	
 	// setup options page
-	register_setting( $sb_player_options, $sb_player_options, 'sb_player_options_validate' );
-	$section = $sb_player_options . '_s1';
-	add_settings_section( $section, __( 'Video Encoding', 'startbox' ), 'sb_player_encoding_options_section', $sb_player_options_page );
-	$callback = 'sb_player_options_field';
-	add_settings_field( $section . '_f1', __( 'Auto encode after upload', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'automatic' ) );
-	add_settings_field( $section . '_f2', __( 'Screenshot percentage', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'screenshot' ) );
-	add_settings_field( $section . '_f3', __( 'Screenshot sequence', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'sequence' ) );
-	add_settings_field( $section . '_f4', __( 'Debug', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'debug' ) );
-	add_settings_field( $section . '_f5', __( 'Sample', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'sample' ) );
-	add_settings_field( $section . '_f6', __( 'Path to FFMPEG', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'ffmpeg_path' ) );
-	add_settings_field( $section . '_f7', __( 'Path to FFMPEG preset', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'ffmpeg_preset' ) );
-	add_settings_field( $section . '_f8', __( 'Path to FLVTOOL2', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'flvtool2_path' ) );
-	add_settings_field( $section . '_f9', __( 'Path to QT-FASTSTART', 'startbox' ), $callback, $sb_player_options_page, $section, array( 'label_for' => 'qtfaststart_path' ) );
+	register_setting( $players_options, $players_options, 'players_options_validate' );
+	$section = $players_options . '_s1';
+	add_settings_section( $section, __( 'Video Encoding', 'players' ), 'players_encoding_options_section', $players_options_page );
+	$callback = 'players_options_field';
+	add_settings_field( $section . '_f1', __( 'Auto encode after upload', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'automatic' ) );
+	add_settings_field( $section . '_f2', __( 'Screenshot percentage', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'screenshot' ) );
+	add_settings_field( $section . '_f3', __( 'Screenshot sequence', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'sequence' ) );
+	add_settings_field( $section . '_f4', __( 'Debug', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'debug' ) );
+	add_settings_field( $section . '_f5', __( 'Sample', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'sample' ) );
+	add_settings_field( $section . '_f6', __( 'Path to FFMPEG', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'ffmpeg_path' ) );
+	add_settings_field( $section . '_f7', __( 'Path to FFMPEG preset', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'ffmpeg_preset' ) );
+	add_settings_field( $section . '_f8', __( 'Path to FLVTOOL2', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'flvtool2_path' ) );
+	add_settings_field( $section . '_f9', __( 'Path to QT-FASTSTART', 'players' ), $callback, $players_options_page, $section, array( 'label_for' => 'qtfaststart_path' ) );
 }
-add_action( 'admin_init', 'sb_player_admin_init', 9 );
+add_action( 'admin_init', 'players_admin_init', 9 );
 
 // Add To Admin Menu
-function sb_player_admin_menu() {
-	global $sb_player_options_page;
-	add_submenu_page( 'edit.php?post_type=player', __( 'Options', 'startbox' ), __( 'Options', 'startbox' ), 'manage_options', $sb_player_options_page, 'sb_player_options_page' );
+function players_admin_menu() {
+	global $players_options_page;
+	add_submenu_page( 'edit.php?post_type=player', __( 'Options', 'players' ), __( 'Options', 'players' ), 'manage_options', $players_options_page, 'players_options_page' );
 }
-add_action( 'admin_menu', 'sb_player_admin_menu' );
+add_action( 'admin_menu', 'players_admin_menu' );
 
 // Add "Settings" Link To Plugins Page
-function sb_player_action_links( $links, $file ) {
-	global $sb_player_options_page;
+function players_action_links( $links, $file ) {
+	global $players_options_page;
 	
-	if ($file == plugin_basename( __FILE__ )) $links[] = '<a href="edit.php?post_type=player&page=' . $sb_player_options_page . '">' . __( 'Settings' ) . '</a>';
+	if ($file == plugin_basename( __FILE__ )) $links[] = '<a href="edit.php?post_type=player&page=' . $players_options_page . '">' . __( 'Settings' ) . '</a>';
 
 	return $links;
 }
-add_filter( 'plugin_action_links', 'sb_player_action_links', 10, 2 );
+add_filter( 'plugin_action_links', 'players_action_links', 10, 2 );
 
 // Add To Admin Head
-function sb_player_admin_head() { ?>
+function players_admin_head() { ?>
 	<style type="text/css">
 		/* icons */
 		#menu-posts-player .wp-menu-image {
@@ -1284,65 +1285,65 @@ function sb_player_admin_head() { ?>
 		}
 	</style>
 <?php }
-add_action( 'admin_head', 'sb_player_admin_head' );
+add_action( 'admin_head', 'players_admin_head' );
 
 // Get Option
-function sb_player_get_option( $option ) {
-	global $sb_player_options;
+function players_get_option( $option ) {
+	global $players_options;
 	
-	$options = get_option( $sb_player_options );
+	$options = get_option( $players_options );
 	
 	return (is_string( $options[$option] ) ? stripslashes( $options[$option] ) : $options[$option]);
 }
 
 // Set Option
-function sb_player_update_option( $option, $value ) {
-	global $sb_player_options;
+function players_update_option( $option, $value ) {
+	global $players_options;
 	
-	$options = get_option( $sb_player_options );
+	$options = get_option( $players_options );
 	
 	$options[$option] = $value;
 	
-	return update_option( $sb_player_options, $options );
+	return update_option( $players_options, $options );
 }
 
 // Options Page Admin Notices
-function sb_player_options_admin_notices() {
-	if (!sb_player_verify_post_type() || !isset( $_GET['page'] ) || ($_GET['page'] !== 'options')) return;
+function players_options_admin_notices() {
+	if (!players_verify_post_type() || !isset( $_GET['page'] ) || ($_GET['page'] !== 'options')) return;
 	
-	sb_player_update_option( 'ffmpeg_capabilities', $capabilities = sb_player_get_ffmpeg_capabilities() );
-	if (in_array( 0, $capabilities )) $outdated = '<strong>' . __( 'but is outdated and should be updated if possible.', 'startbox' ) . '</strong>';
+	players_update_option( 'ffmpeg_capabilities', $capabilities = players_get_ffmpeg_capabilities() );
+	if (in_array( 0, $capabilities )) $outdated = '<strong>' . __( 'but is outdated and should be updated if possible.', 'players' ) . '</strong>';
 	
 	// queue error/success messages
 	$error = $success = array();
 	
-	if ($ffmpeg_version = sb_player_verify_ffmpeg())
-		array_push( $success, 'FFMPEG ' . __( 'version', 'startbox' ) . ' ' . $ffmpeg_version . ' '  . 
-			__( 'successfully detected using path', 'startbox' ) . 
-			' <code>' . sb_player_get_option( 'ffmpeg_path' ) . '</code>' . (isset( $outdated ) ? ' ' . $outdated : '') );
+	if ($ffmpeg_version = players_verify_ffmpeg())
+		array_push( $success, 'FFMPEG ' . __( 'version', 'players' ) . ' ' . $ffmpeg_version . ' '  . 
+			__( 'successfully detected using path', 'players' ) . 
+			' <code>' . players_get_option( 'ffmpeg_path' ) . '</code>' . (isset( $outdated ) ? ' ' . $outdated : '') );
 	else
-		array_push( $error, __( 'The current path to', 'startbox' ) . ' FFMPEG ' . 
-			__( 'is invalid', 'startbox' ) . ' &mdash; ' . __( 'Videos will not be encoded.', 'startbox' ) );
+		array_push( $error, __( 'The current path to', 'players' ) . ' FFMPEG ' . 
+			__( 'is invalid', 'players' ) . ' &mdash; ' . __( 'Videos will not be encoded.', 'players' ) );
 		
-	if ($flvtool2_version = sb_player_verify_flvtool2())
-		array_push( $success, 'FLVTOOL2 ' . __( 'version', 'startbox' ) . ' ' . $flvtool2_version . ' ' . 
-			__( 'successfully detected using path', 'startbox' ) . 
-			' <code>' . sb_player_get_option( 'flvtool2_path' ) . '</code>' );
+	if ($flvtool2_version = players_verify_flvtool2())
+		array_push( $success, 'FLVTOOL2 ' . __( 'version', 'players' ) . ' ' . $flvtool2_version . ' ' . 
+			__( 'successfully detected using path', 'players' ) . 
+			' <code>' . players_get_option( 'flvtool2_path' ) . '</code>' );
 	else
-		array_push( $error, __( 'The current path to', 'startbox' ) . ' FLVTOOL2 ' . 
-			__( 'is invalid', 'startbox' ) . ' &mdash; ' . __( 'Metadata will not be inserted into FLV encodes.', 'startbox' ) );
+		array_push( $error, __( 'The current path to', 'players' ) . ' FLVTOOL2 ' . 
+			__( 'is invalid', 'players' ) . ' &mdash; ' . __( 'Metadata will not be inserted into FLV encodes.', 'players' ) );
 			
-	if (sb_player_verify_qtfaststart())
+	if (players_verify_qtfaststart())
 		array_push( $success, 'QT-FASTSTART ' . 
-			__( 'successfully detected using path', 'startbox' ) . 
-			' <code>' . sb_player_get_option( 'qtfaststart_path' ) . '</code>' );
+			__( 'successfully detected using path', 'players' ) . 
+			' <code>' . players_get_option( 'qtfaststart_path' ) . '</code>' );
 	else
-		array_push( $error, __( 'The current path to', 'startbox' ) . ' QT-FASTSTART ' . 
-			__( 'is invalid', 'startbox' ) . ' &mdash; ' . __( 'Will fallback to the less optimal moovrelocator script.', 'startbox' ) );
+		array_push( $error, __( 'The current path to', 'players' ) . ' QT-FASTSTART ' . 
+			__( 'is invalid', 'players' ) . ' &mdash; ' . __( 'Will fallback to the less optimal moovrelocator script.', 'players' ) );
 	
 	// if exec not supported, override all error messages with this one
-	if (!sb_player_verify_exec())
-		$error = array( __( 'Video encoding will not work because' ) . ' <code>exec()</code> ' . __( 'has been disabled on this server. PHP Safe Mode most likely needs to be turned OFF. Contact your hosting company.', 'startbox' ) );
+	if (!players_verify_exec())
+		$error = array( __( 'Video encoding will not work because' ) . ' <code>exec()</code> ' . __( 'has been disabled on this server. PHP Safe Mode most likely needs to be turned OFF. Contact your hosting company.', 'players' ) );
 	
 	// output error/success messages
 	foreach ($error as $message) echo '<div class="error"><p>' . $message . '</p></div>';
@@ -1351,13 +1352,13 @@ function sb_player_options_admin_notices() {
 		foreach ($success as $message) echo '<div class="updated"><p>' . $message . '</p></div>';
 	}
 }
-add_action( 'admin_notices', 'sb_player_options_admin_notices', 9 );
+add_action( 'admin_notices', 'players_options_admin_notices', 9 );
 
 // Validate Players Options
-function sb_player_options_validate( $input ) {
-	global $sb_player_options;
+function players_options_validate( $input ) {
+	global $players_options;
 	
-	$options = array_merge( get_option( $sb_player_options ), $input );
+	$options = array_merge( get_option( $players_options ), $input );
 	
 	$options['automatic'] = esc_attr( $input['automatic'] );
 	
@@ -1366,7 +1367,7 @@ function sb_player_options_validate( $input ) {
 		$options['screenshot'] = (int)$screenshot;
 	} else {
 		$options['screenshot'] = 50;
-		//array_push( $error, __( 'Invalid screenshot percentage. Defaulting to 50.', 'startbox' ) );
+		//array_push( $error, __( 'Invalid screenshot percentage. Defaulting to 50.', 'players' ) );
 	}
 	
 	$options['sequence'] = ((is_numeric( $sequence = esc_attr( $input['sequence'] ) ) && $sequence > 1) ? (int)$sequence : 0);
@@ -1374,87 +1375,87 @@ function sb_player_options_validate( $input ) {
 	$options['debug'] = esc_attr( (isset( $input['debug'] ) ? $input['debug'] : '') );
 	$options['sample'] = esc_attr( (isset( $input['sample'] ) ? $input['sample'] : '') );
 	
-	$options['ffmpeg_path'] = esc_attr( sb_player_path( $input['ffmpeg_path'] ) );
-	$options['ffmpeg_preset'] = esc_attr( sb_player_path( $input['ffmpeg_preset'] ) );
+	$options['ffmpeg_path'] = esc_attr( players_path( $input['ffmpeg_path'] ) );
+	$options['ffmpeg_preset'] = esc_attr( players_path( $input['ffmpeg_preset'] ) );
 	
-	$options['flvtool2_path'] = esc_attr( sb_player_path( $input['flvtool2_path'] ) );
+	$options['flvtool2_path'] = esc_attr( players_path( $input['flvtool2_path'] ) );
 	
-	$options['qtfaststart_path'] = esc_attr( sb_player_path( $input['qtfaststart_path'] ) );
+	$options['qtfaststart_path'] = esc_attr( players_path( $input['qtfaststart_path'] ) );
 	
 	return $options;
 }
 
 // "Video Encoding" Options Page Section
-function sb_player_encoding_options_section() {
+function players_encoding_options_section() {
 	// could echo a description if necessary...
-	if (!empty( $_GET['ffmpeg_info'] )) echo '<pre>' . sb_player_shell_exec( sb_player_get_option( 'ffmpeg_path' ) . ' -version' ) . '</pre>';
+	if (!empty( $_GET['ffmpeg_info'] )) echo '<pre>' . players_shell_exec( players_get_option( 'ffmpeg_path' ) . ' -version' ) . '</pre>';
 }
 
 // Handle Options Page Setting Fields
-function sb_player_options_field( $field ) {
-	global $sb_player_options;
+function players_options_field( $field ) {
+	global $players_options;
 	
-	$options = get_option( $sb_player_options );
+	$options = get_option( $players_options );
 	
 	switch( $field['label_for'] ) {
 		case 'automatic': ?>
-			<select name="<?php echo $sb_player_options; ?>[automatic]" id="automatic">
-				<option value="enabled"<?php selected( $options['automatic'], 'enabled' ); ?>><?php _e( 'Enabled', 'startbox' ); ?></option>
-				<option value="disabled"<?php selected( $options['automatic'], 'disabled' ); ?>><?php _e( 'Disabled', 'startbox' ); ?></option>
+			<select name="<?php echo $players_options; ?>[automatic]" id="automatic">
+				<option value="enabled"<?php selected( $options['automatic'], 'enabled' ); ?>><?php _e( 'Enabled', 'players' ); ?></option>
+				<option value="disabled"<?php selected( $options['automatic'], 'disabled' ); ?>><?php _e( 'Disabled', 'players' ); ?></option>
 			</select>
 			<span class="description">
-				<?php _e( 'Videos can always be encoded by hand after uploading from the', 'startbox' ); ?> 
-				<a href="<?php echo get_admin_url(); ?>/upload.php"><?php _e( 'Media Library', 'startbox' ); ?></a> 
-				<?php _e( 'page.', 'startbox' ); ?>
+				<?php _e( 'Videos can always be encoded by hand after uploading from the', 'players' ); ?> 
+				<a href="<?php echo get_admin_url(); ?>/upload.php"><?php _e( 'Media Library', 'players' ); ?></a> 
+				<?php _e( 'page.', 'players' ); ?>
 			</span>
 			<?php break;
 			case 'screenshot': ?>
-				<input name="<?php echo $sb_player_options; ?>[screenshot]" type="text" id="screenshot" value="<?php echo esc_attr( $options['screenshot'] ); ?>" class="small-text" /><code>%</code>
-				<span class="description"><?php _e( 'A primary screenshot will be taken at this percentage through the video. Enter a number between 1 and 100.', 'startbox' ); ?></span>
+				<input name="<?php echo $players_options; ?>[screenshot]" type="text" id="screenshot" value="<?php echo esc_attr( $options['screenshot'] ); ?>" class="small-text" /><code>%</code>
+				<span class="description"><?php _e( 'A primary screenshot will be taken at this percentage through the video. Enter a number between 1 and 100.', 'players' ); ?></span>
 				<?php break;
 			case 'sequence': ?>
-				<input name="<?php echo $sb_player_options; ?>[sequence]" type="text" id="sequence" value="<?php echo esc_attr( $options['sequence'] ); ?>" class="small-text" />
-				<span class="description"><?php _e( 'This number of secondary screenshots will be taken evenly throughout the video. Anything less than 2 will disable this feature.', 'startbox' ); ?></span>
+				<input name="<?php echo $players_options; ?>[sequence]" type="text" id="sequence" value="<?php echo esc_attr( $options['sequence'] ); ?>" class="small-text" />
+				<span class="description"><?php _e( 'This number of secondary screenshots will be taken evenly throughout the video. Anything less than 2 will disable this feature.', 'players' ); ?></span>
 				<?php break;
 			case 'debug': ?>
-				<input name="<?php echo $sb_player_options; ?>[debug]" type="checkbox" id="debug" value="1" <?php checked( '1', $options['debug'] ); ?> />
-				<span class="description"><?php _e( 'Output debug files to the encodes directory of the attachment', 'startbox' ); ?> (<?php _e( 'located at', 'startbox' ); ?> <code>/<?php $upload_dir = wp_upload_dir(); echo str_replace( ABSPATH, '', $upload_dir['basedir'] ); ?>/[<?php _e( 'year', 'startbox' ); ?>]/[<?php _e( 'month', 'startbox' ); ?>]/[<?php _e( 'attachment_filename', 'startbox' ); ?>]/</code>).</span>
+				<input name="<?php echo $players_options; ?>[debug]" type="checkbox" id="debug" value="1" <?php checked( '1', $options['debug'] ); ?> />
+				<span class="description"><?php _e( 'Output debug files to the encodes directory of the attachment', 'players' ); ?> (<?php _e( 'located at', 'players' ); ?> <code>/<?php $upload_dir = wp_upload_dir(); echo str_replace( ABSPATH, '', $upload_dir['basedir'] ); ?>/[<?php _e( 'year', 'players' ); ?>]/[<?php _e( 'month', 'players' ); ?>]/[<?php _e( 'attachment_filename', 'players' ); ?>]/</code>).</span>
 				<?php break;
 			case 'sample': ?>
-				<input name="<?php echo $sb_player_options; ?>[sample]" type="checkbox" id="sample" value="1" <?php checked( '1', $options['sample'] ); ?> />
-				<span class="description"><?php _e( 'Only encode a short sample (the first 30 seconds).', 'startbox' ); ?></span>
+				<input name="<?php echo $players_options; ?>[sample]" type="checkbox" id="sample" value="1" <?php checked( '1', $options['sample'] ); ?> />
+				<span class="description"><?php _e( 'Only encode a short sample (the first 30 seconds).', 'players' ); ?></span>
 				<?php break;
 			case 'ffmpeg_path': ?>
-				<input name="<?php echo $sb_player_options; ?>[ffmpeg_path]" type="text" id="ffmpeg_path" value="<?php echo esc_attr( $options['ffmpeg_path'] ); ?>" class="regular-text" />
-				<span class="description"><?php _e( 'Will most likely be', 'startbox' ) ?> <code>/usr/bin/ffmpeg</code> <?php _e( 'or', 'startbox' ) ?> <code>ffmpeg</code>.</span>
+				<input name="<?php echo $players_options; ?>[ffmpeg_path]" type="text" id="ffmpeg_path" value="<?php echo esc_attr( $options['ffmpeg_path'] ); ?>" class="regular-text" />
+				<span class="description"><?php _e( 'Will most likely be', 'players' ) ?> <code>/usr/bin/ffmpeg</code> <?php _e( 'or', 'players' ) ?> <code>ffmpeg</code>.</span>
 				<?php break;
 			case 'ffmpeg_preset': ?>
-				<input name="<?php echo $sb_player_options; ?>[ffmpeg_preset]" type="text" id="ffmpeg_preset" value="<?php echo esc_attr( $options['ffmpeg_preset'] ); ?>" class="regular-text" />
-				<span class="description"><?php _e( 'Preset name or path to an FFMPEG preset file. Default is <code>hq</code>.', 'startbox' ); ?></span>
+				<input name="<?php echo $players_options; ?>[ffmpeg_preset]" type="text" id="ffmpeg_preset" value="<?php echo esc_attr( $options['ffmpeg_preset'] ); ?>" class="regular-text" />
+				<span class="description"><?php _e( 'Preset name or path to an FFMPEG preset file. Default is <code>hq</code>.', 'players' ); ?></span>
 				<?php break;
 			case 'flvtool2_path': ?>
-				<input name="<?php echo $sb_player_options; ?>[flvtool2_path]" type="text" id="flvtool2_path" value="<?php echo esc_attr( $options['flvtool2_path'] ); ?>" class="regular-text" />
-				<span class="description"><?php _e( 'Will most likely be <code>/usr/bin/flvtool2</code> or <code>flvtool2</code>.', 'startbox' ); ?></span>
+				<input name="<?php echo $players_options; ?>[flvtool2_path]" type="text" id="flvtool2_path" value="<?php echo esc_attr( $options['flvtool2_path'] ); ?>" class="regular-text" />
+				<span class="description"><?php _e( 'Will most likely be <code>/usr/bin/flvtool2</code> or <code>flvtool2</code>.', 'players' ); ?></span>
 				<?php break;
 			case 'qtfaststart_path': ?>
-				<input name="<?php echo $sb_player_options; ?>[qtfaststart_path]" type="text" id="qtfaststart_path" value="<?php echo esc_attr( $options['qtfaststart_path'] ); ?>" class="regular-text" />
-				<span class="description"><?php _e( 'Will most likely be <code>/usr/bin/qt-faststart</code> or <code>qt-faststart</code>.', 'startbox' ); ?></span>
+				<input name="<?php echo $players_options; ?>[qtfaststart_path]" type="text" id="qtfaststart_path" value="<?php echo esc_attr( $options['qtfaststart_path'] ); ?>" class="regular-text" />
+				<span class="description"><?php _e( 'Will most likely be <code>/usr/bin/qt-faststart</code> or <code>qt-faststart</code>.', 'players' ); ?></span>
 				<?php break;
 	}
 }
 
 
 // Options Admin Page
-function sb_player_options_page() {
-	global $sb_player_options, $sb_player_options_page;
+function players_options_page() {
+	global $players_options, $players_options_page;
 	?>
 	<div class="wrap">
 	<?php screen_icon(); ?>
-	<h2><?php esc_html_e( 'Options', 'startbox' ); ?></h2>
+	<h2><?php esc_html_e( 'Options', 'players' ); ?></h2>
 	
 	<form action="options.php" method="post">
-	<?php settings_fields( $sb_player_options );
-	do_settings_sections( $sb_player_options_page ); ?>
+	<?php settings_fields( $players_options );
+	do_settings_sections( $players_options_page ); ?>
 	<?php submit_button(); ?>
 	</form>
 	
@@ -1462,7 +1463,7 @@ function sb_player_options_page() {
 	
 	<p>There are three default player controllers but you are not limited to these. It is possible to add your own controller using a filter and a callback function from within a plugin or functions.php file.</p>
 	
-	<p>The filter <code>sb_player_controllers</code> passes the array of default controllers. Manipulate this array to add, remove or modify controllers.</p>
+	<p>The filter <code>players_controllers</code> passes the array of default controllers. Manipulate this array to add, remove or modify controllers.</p>
 	
 	<p>Each controller in the array of default controllers must define a <code>shortcode_cb</code> that references a callback function. This callback will be passed five variables:</p>
 	
@@ -1475,11 +1476,12 @@ function sb_player_options_page() {
 	</ol>
 	
 	<?php
-	$directory = dirname( __FILE__ ) . '\controllers\\';
+	$directory = dirname( __FILE__ ) . '/controllers/';
 	$glob = glob( $directory . '*.php' );
 	$count = count( $glob );
 	$files = '';
-	foreach( $glob as $file ) $files .= '<code>' . basename( $file ) . '</code>' . ($count-- == 2 ? ' ' . __( 'and', 'startbox' ) . ' ' : ($count > 1 ? ', ' : ''));
+	foreach( $glob as $file ) 
+		$files .= '<code>' . basename( $file ) . '</code>' . ($count-- == 2 ? ' ' . __( 'and', 'players' ) . ' ' : ($count > 1 ? ', ' : ''));
 	?>
 	
 	<p>For examples, look at the default controller files <?php echo $files; ?> in <code><?php echo $directory; ?></code>.</p>
@@ -1488,44 +1490,44 @@ function sb_player_options_page() {
 	<?php	
 }
 
-// Callback From register_post_type In sb_player_init
-function sb_player_meta_box_callback() {
-	global $wpdb, $post, $sb_player_interface, $sb_player_units, $sb_player_controllers;
+// Callback From register_post_type In players_init
+function players_meta_box_callback() {
+	global $wpdb, $post, $players_interface, $players_units, $players_controllers;
 	
 	$player = get_post_meta( $post->ID, 'player', true );
 	
 	// make sure the current controller exists, set it to first available controller if not
-	if( !isset( $player['controller'] ) || !isset( $sb_player_controllers[$player['controller']] ) ) {
-		$controller_keys = array_keys( $sb_player_controllers );
+	if( !isset( $player['controller'] ) || !isset( $players_controllers[$player['controller']] ) ) {
+		$controller_keys = array_keys( $players_controllers );
 		$player['controller'] = $controller_keys[0];
 		update_post_meta( $post->ID, 'player', $player );
 	}
 	
-	$sb_player_units = array_merge( $sb_player_units, sb_player_units( $post->ID ) ); // add new units
-	usort( $sb_player_units, 'sb_player_sort_order' ); // order the units
+	$players_units = array_merge( $players_units, players_units( $post->ID ) ); // add new units
+	usort( $players_units, 'players_sort_order' ); // order the units
 	
 	// Add custom meta boxes to custom post type
-	add_meta_box( 'sb_player_units', __( 'Media', 'startbox' ), 'sb_player_units_meta', 'player', 'normal', 'low' );
-	add_meta_box( 'sb_player_library', __( 'Media Library', 'startbox' ), 'sb_player_library_meta', 'player', 'normal', 'low' );
-	add_meta_box( 'sb_player_shortcode', __( 'Shortcode', 'startbox' ), 'sb_player_shortcode_meta', 'player', 'side', 'low' );
-	add_meta_box( 'sb_player_controller', __( 'Controller', 'startbox' ), 'sb_player_controller_meta', 'player', 'side', 'low' );
-	add_meta_box( 'sb_player_options', __( 'Options', 'startbox' ), 'sb_player_options_meta', 'player', 'side', 'low' );
+	add_meta_box( 'players_units', __( 'Media', 'players' ), 'players_units_meta', 'player', 'normal', 'low' );
+	add_meta_box( 'players_library', __( 'Media Library', 'players' ), 'players_library_meta', 'player', 'normal', 'low' );
+	add_meta_box( 'players_shortcode', __( 'Shortcode', 'players' ), 'players_shortcode_meta', 'player', 'side', 'low' );
+	add_meta_box( 'players_controller', __( 'Controller', 'players' ), 'players_controller_meta', 'player', 'side', 'low' );
+	add_meta_box( 'players_options', __( 'Options', 'players' ), 'players_options_meta', 'player', 'side', 'low' );
 }
 
 // Output "units" Meta Box
-function sb_player_units_meta() {
-	echo '<input type="hidden" name="sb_noncename" id="sb_noncename" 
+function players_units_meta() {
+	echo '<input type="hidden" name="players_noncename" id="players_noncename" 
 		value="' . wp_create_nonce( plugin_basename( __FILE__ ) ) . '" />'; // security nonce
 		
-	sb_player_meta_box( 'units' );
+	players_meta_box( 'units' );
 }
 
 // Output "Media Library" Meta Box
-function sb_player_library_meta() {
-	global $sb_player_interface, $sb_player_units;
+function players_library_meta() {
+	global $players_interface, $players_units;
 	
 	$mime_types = $years = $months = array();
-	foreach( $sb_player_units as $unit ) {
+	foreach( $players_units as $unit ) {
 		if( is_array( $type = $unit['attachment']['type'] ) ) {
 			$mime_types = array_unique( array_merge( $type, $mime_types ) );
 		} else {
@@ -1540,20 +1542,20 @@ function sb_player_library_meta() {
 	sort( $years, SORT_NUMERIC );
 	sort( $months, SORT_NUMERIC );
 	
-	sb_player_meta_box( 'library' );
+	players_meta_box( 'library' );
 ?>
 	<div id="libraryFilters">
-		<div> <em><?php _e( 'Library Filters', 'startbox' ); ?></em> </div>
-		<div class="filterGroup"> <a href="#" id="clear-filters"><?php _e( 'Clear', 'startbox' ); ?></a> </div>
+		<div> <em><?php _e( 'Library Filters', 'players' ); ?></em> </div>
+		<div class="filterGroup"> <a href="#" id="clear-filters"><?php _e( 'Clear', 'players' ); ?></a> </div>
 		<div class="filterGroup">
-			<label for="filter_year"> <?php _e( 'Year', 'startbox' ); ?>: </label>
+			<label for="filter_year"> <?php _e( 'Year', 'players' ); ?>: </label>
 			<select id="filter_year">
 				<option value="all">&infin;&nbsp;</option>
 				<?php foreach ($years as $year) : ?>
 				<option value="<?php echo $year; ?>"><?php echo $year; ?></option>
 				<?php endforeach; ?>
 			</select>
-			<label for="filter_month">&nbsp;<?php _e( 'Month', 'startbox' ); ?>: </label>
+			<label for="filter_month">&nbsp;<?php _e( 'Month', 'players' ); ?>: </label>
 			<select id="filter_month">
 				<option value="all">&infin;&nbsp;</option>
 				<?php foreach ($months as $month) : ?>
@@ -1562,7 +1564,7 @@ function sb_player_library_meta() {
 			</select>
 		</div>
 		<div class="filterGroup">
-			<label for="filter_type"> <?php _e( 'Media Type', 'startbox' ); ?>: </label>
+			<label for="filter_type"> <?php _e( 'Media Type', 'players' ); ?>: </label>
 			<select id="filter_type">
 				<option value="all">&infin;&nbsp;</option>
 				<?php foreach ($mime_types as $type) : ?>
@@ -1571,35 +1573,35 @@ function sb_player_library_meta() {
 			</select>
 		</div>
 		<div class="filterGroup">
-			<label for="filter_width_ltgt"> <?php _e( 'Width', 'startbox' ); ?>: </label>
+			<label for="filter_width_ltgt"> <?php _e( 'Width', 'players' ); ?>: </label>
 			<select id="filter_width_ltgt">
-				<option value="gt"><?php _e( 'greater than', 'startbox' ); ?>&nbsp;</option>
-				<option value="lt"><?php _e( 'less than', 'startbox' ); ?></option>
+				<option value="gt"><?php _e( 'greater than', 'players' ); ?>&nbsp;</option>
+				<option value="lt"><?php _e( 'less than', 'players' ); ?></option>
 			</select>
 			<input type="text" id="filter_width" class="pixelfield" 
-				value="<?php echo $sb_player_interface['filter_width']; ?>" /><code>px</code>
-			<label for="filter_height_ltgt">&nbsp;<?php _e( 'Height', 'startbox' ); ?>: </label>
+				value="<?php echo $players_interface['filter_width']; ?>" /><code>px</code>
+			<label for="filter_height_ltgt">&nbsp;<?php _e( 'Height', 'players' ); ?>: </label>
 			<select id="filter_height_ltgt">
-				<option value="gt"><?php _e( 'greater than', 'startbox' ); ?>&nbsp;</option>
-				<option value="lt"><?php _e( 'less than', 'startbox' ); ?></option>
+				<option value="gt"><?php _e( 'greater than', 'players' ); ?>&nbsp;</option>
+				<option value="lt"><?php _e( 'less than', 'players' ); ?></option>
 			</select>
 			<input type="text" id="filter_height" class="pixelfield" 
-				value="<?php echo $sb_player_interface['filter_height']; ?>" /><code>px</code>
+				value="<?php echo $players_interface['filter_height']; ?>" /><code>px</code>
 		</div>
 	</div>
-	<div id="uploaddiv" class="hide-if-no-js"> <a title="Upload a file" id="uploadlink" class="button" href="#"><?php _e( 'Add New', 'startbox' ); ?></a> <span id="uploadresult"></span> </div>
+	<div id="uploaddiv" class="hide-if-no-js"> <a title="Upload a file" id="uploadlink" class="button" href="#"><?php _e( 'Add New', 'players' ); ?></a> <span id="uploadresult"></span> </div>
 <?php
 }
 
 // Output "Shortcode" Meta Box
-function sb_player_shortcode_meta() {
+function players_shortcode_meta() {
 	global $post;
-	echo sb_player_embed_input( $post->ID );
+	echo players_embed_input( $post->ID );
 }
 
 // Output "Controller" Meta Box
-function sb_player_controller_meta() {
-	global $post, $sb_player_controllers;
+function players_controller_meta() {
+	global $post, $players_controllers;
 	
 	$player = get_post_meta( $post->ID, 'player', true );
 ?>
@@ -1610,15 +1612,15 @@ function sb_player_controller_meta() {
 		<select name="player[controller]" id="controller">
 <?php
 		$description = '';
-		foreach ($sb_player_controllers as $controller => $info) :
-			$description .= '<div class="controller-' . $controller . ' sb_controller">
-				<p><strong>' . __( 'Description', 'startbox' ) . '</strong></p>
+		foreach ($players_controllers as $controller => $info) :
+			$description .= '<div class="controller-' . $controller . ' players_controller">
+				<p><strong>' . __( 'Description', 'players' ) . '</strong></p>
 				<p>' . $info['description'] . '</p>' . 
 				(isset( $info['website'] ) ? '<p><a href="' . $info['website'] . '" 
-					alt="' . __( 'More Information', 'startbox' ) . '" 
-					title="' . __( 'More Information', 'startbox' ) . '" 
+					alt="' . __( 'More Information', 'players' ) . '" 
+					title="' . __( 'More Information', 'players' ) . '" 
 					target="_blank">' . $info['website'] . '</a></p>' : '')
-				. '<p><strong>' . __( 'Supports', 'startbox' ) . '</strong></p>
+				. '<p><strong>' . __( 'Supports', 'players' ) . '</strong></p>
 				<p>' . implode( ', ', $info['mime_types'] ) . '</p></div>';
 ?>
 			<option value="<?php echo $controller; ?>"<?php echo ($controller == $player['controller'] ? ' selected="selected"' : ''); ?>><?php echo $info['nicename']; ?></option>
@@ -1632,34 +1634,34 @@ function sb_player_controller_meta() {
 }
 
 // Output "Options" Meta Box
-function sb_player_options_meta() {
-	global $post, $pagenow, $sb_player_interface, $sb_player_controllers;
+function players_options_meta() {
+	global $post, $pagenow, $players_interface, $players_controllers;
 	
 	// get various options stored as post meta records	
 	$player = get_post_meta( $post->ID, 'player', true );
 	$controller = get_post_meta( $post->ID, 'controller', true );
 ?>
-	<p><strong><?php _e( 'Player Size', 'startbox' ); ?></strong></p>
+	<p><strong><?php _e( 'Player Size', 'players' ); ?></strong></p>
 	<div id="size_radio_buttons">
 <?php
-	foreach ($sb_player_interface['sizes'] as $key => $value) 
-		echo sb_player_radio( $key, $value, 'player[size][selected]', (empty( $player['size']['selected'] ) ? 'min' : $player['size']['selected']) );
+	foreach ($players_interface['sizes'] as $key => $value) 
+		echo players_radio( $key, $value, 'player[size][selected]', (empty( $player['size']['selected'] ) ? 'min' : $player['size']['selected']) );
 ?>
 	</div>
     <p id="custom_size" class="hide-if-js">
-	<label for="custom_width"><?php _e( 'Width', 'startbox' ); ?></label> 
+	<label for="custom_width"><?php _e( 'Width', 'players' ); ?></label> 
 		<input type="text" id="custom_width" class="pixelfield" name="player[size][custom][width]" 
-			value="<?php echo $player['size']['custom']['width']; ?>" /><?php sb_player_tag( __( 'px', 'startbox' ), 'code' ); ?>
-	<label for="custom_height"><?php _e( 'Height', 'startbox' ); ?></label> 
+			value="<?php echo $player['size']['custom']['width']; ?>" /><?php players_tag( __( 'px', 'players' ), 'code' ); ?>
+	<label for="custom_height"><?php _e( 'Height', 'players' ); ?></label> 
 		<input type="text" id="custom_height" class="pixelfield" name="player[size][custom][height]" 
-			value="<?php echo $player['size']['custom']['height']; ?>" /><?php sb_player_tag( __( 'px', 'startbox' ), 'code' ); ?>
+			value="<?php echo $player['size']['custom']['height']; ?>" /><?php players_tag( __( 'px', 'players' ), 'code' ); ?>
 	</p>
 
 <?php
-	foreach ($sb_player_controllers as $controller_name => $info) :
+	foreach ($players_controllers as $controller_name => $info) :
 		if (empty( $info['options'] )) continue;
 ?>
-		<div class="controller-<?php echo $controller_name; ?> sb_controller">
+		<div class="controller-<?php echo $controller_name; ?> players_controller">
 <?php 
 			foreach( $info['options'] as $key => $opts ) {
 				$controller_string = 'controller[' . $controller_name . ']';
@@ -1672,24 +1674,24 @@ function sb_player_options_meta() {
 						//$test = $controller[$controller_name][$opts['group']];
 						$checked = (!empty( $controller ) && ($group == '' ? isset( $controller[$controller_name][$key] ) : isset( $controller[$controller_name][$opts['group']][$key] ))  
 							|| isset( $opts['default'] ) ? $key : '');
-						if (!empty( $opts['desc'] )) sb_player_tag( $opts['desc'] );
-						echo sb_player_checkbox( $key, $opts['label'], $controller_string . $group, $checked, (isset( $opts['sub'] ) ? 'subopt' : '') );
-						if (!empty( $opts['hint'] )) sb_player_tag( $opts['hint'], 'p', 'hint' );
+						if (!empty( $opts['desc'] )) players_tag( $opts['desc'] );
+						echo players_checkbox( $key, $opts['label'], $controller_string . $group, $checked, (isset( $opts['sub'] ) ? 'subopt' : '') );
+						if (!empty( $opts['hint'] )) players_tag( $opts['hint'], 'p', 'hint' );
 						break;
 					case 'select':
 						if (!is_array( $options = $opts['options'] )) break;
 						$selected = (!empty( $controller ) && isset( $controller[$controller_name][$key] ) ? $controller[$controller_name][$key] : $opts['default']);
 						$controller_string .= '[' . $key . ']';
-						if (!empty( $opts['desc'] )) sb_player_tag( $opts['desc'] );
+						if (!empty( $opts['desc'] )) players_tag( $opts['desc'] );
 						echo '<p>';
 						if (isset( $opts['label'] )) echo '<label for="' . $controller_string . '">' . $opts['label'] . '</label> ';
 						echo '<select name="' . $controller_string . '" id="' . $controller_string . '">';
 						foreach( $options as $value => $nicename ) 
 							echo '<option value="' . $value . '"' . ($value == $selected ? ' selected="selected"' : '') . '>' . $nicename . '</option>';
 						echo '</select>';
-						if (!empty( $opts['units'] )) sb_player_tag( $opts['units'], 'code' );
+						if (!empty( $opts['units'] )) players_tag( $opts['units'], 'code' );
 						echo '</p>';
-						if (!empty( $opts['hint'] )) sb_player_tag( $opts['hint'], 'p', 'hint' );
+						if (!empty( $opts['hint'] )) players_tag( $opts['hint'], 'p', 'hint' );
 						break;
 					case 'input':
 						$default = (isset( $opts['default'] ) ? $opts['default'] : '');
@@ -1697,18 +1699,18 @@ function sb_player_options_meta() {
 						$controller_string .= '[' . $key . ']';
 						$size = (isset( $opts['size'] ) ? ' size="' . $opts['size'] . '"' : '');
 						$class = (isset( $opts['validate'] ) && $opts['validate'] == 'numbers' ? ' class="numbers-only"' : '');
-						if (!empty( $opts['desc'] )) sb_player_tag( $opts['desc'] );
+						if (!empty( $opts['desc'] )) players_tag( $opts['desc'] );
 						echo '<p>';
 						if (isset( $opts['label'] )) echo '<label for="' . $controller_string . '">' . $opts['label'] . '</label> ';
 						echo '<input type="text"' . $size . $class . ' id="' . $controller_string . '" name="' . $controller_string . '" value="' . $value . '" />';
-						if (!empty( $opts['units'] )) sb_player_tag( $opts['units'], 'code' );
+						if (!empty( $opts['units'] )) players_tag( $opts['units'], 'code' );
 						echo '</p>';
-						if (!empty( $opts['hint'] )) sb_player_tag( $opts['hint'], 'p', 'hint' );
+						if (!empty( $opts['hint'] )) players_tag( $opts['hint'], 'p', 'hint' );
 						break;
 					case 'section':
-						sb_player_tag( sb_player_tag( $opts['title'], 'strong', '', false ) );
-						if (!empty( $opts['desc'] )) sb_player_tag( $opts['desc'] );
-						if (!empty( $opts['hint'] )) sb_player_tag( $opts['hint'], 'p', 'hint' );
+						players_tag( players_tag( $opts['title'], 'strong', '', false ) );
+						if (!empty( $opts['desc'] )) players_tag( $opts['desc'] );
+						if (!empty( $opts['hint'] )) players_tag( $opts['hint'], 'p', 'hint' );
 						break;
 				}
 			}
@@ -1719,7 +1721,7 @@ function sb_player_options_meta() {
 }
 
 // Wrap Passed Text In Passed Tag
-function sb_player_tag( $string, $tag = 'p', $class = '', $echo = true ) {
+function players_tag( $string, $tag = 'p', $class = '', $echo = true ) {
 	if (!empty( $class )) $class = ' class="' . $class . '"';
 	
 	$result = '<' . $tag . $class . '>' . $string . '</' . $tag . '>';
@@ -1730,15 +1732,15 @@ function sb_player_tag( $string, $tag = 'p', $class = '', $echo = true ) {
 }
 
 // Output "Units" OR "Media Library" Meta Boxes
-function sb_player_meta_box( $box ) {
-	global $sb_player_units;
+function players_meta_box( $box ) {
+	global $players_units;
 ?>
 	<div class="scrollingContainer">
 		<div class="scrollingHotSpotLeft"></div><div class="scrollingHotSpotRight"></div>
 		<ul class="connectedSortable">
 <?php 
-		foreach( $sb_player_units as $index => $unit ) {
-			if ($unit['box'] == $box) sb_player_sortable_item( $unit, $index );
+		foreach( $players_units as $index => $unit ) {
+			if ($unit['box'] == $box) players_sortable_item( $unit, $index );
 		}
 ?>
 		</ul>
@@ -1747,12 +1749,12 @@ function sb_player_meta_box( $box ) {
 }
 
 // Utility: Get Mime Type
-function sb_player_get_mime_types( $id ) {
+function players_get_mime_types( $id ) {
 	$attachment = get_post( $id );
 	$mime_types = array( $attachment->post_mime_type );
 	
 	// if an encoded video, add all encoded formats
-	if( sb_player_is_video( $mime_types[0] ) && sb_player_tf( $encodes = sb_player_get_encodes( $id ) ) ) {
+	if( players_is_video( $mime_types[0] ) && players_tf( $encodes = players_get_encodes( $id ) ) ) {
 		$mime_types = array(); // strip out source mime type
 		foreach( $encodes as $encode ) {
 			foreach( $encode['mime_types'] as $mime_type => $data ) array_push( $mime_types, $mime_type );
@@ -1763,11 +1765,11 @@ function sb_player_get_mime_types( $id ) {
 }
 
 // Utility: Verify Mime Type
-function sb_player_verify_mime_types( $mime_types, $allowed_types = array() ) {
-	global $sb_player_controllers;
+function players_verify_mime_types( $mime_types, $allowed_types = array() ) {
+	global $players_controllers;
 	
 	if( empty( $allowed_types ) ) { // get mime types supported by all controllers
-		foreach ($sb_player_controllers as $controller) $allowed_types = array_merge( $allowed_types, $controller['mime_types'] );
+		foreach ($players_controllers as $controller) $allowed_types = array_merge( $allowed_types, $controller['mime_types'] );
 		$allowed_types = array_unique( $allowed_types );
 	}
 	
@@ -1776,13 +1778,13 @@ function sb_player_verify_mime_types( $mime_types, $allowed_types = array() ) {
 	return (empty( $intersect ) ? false : true);
 }
 
-function sb_player_is_video( $mime_types ) {
+function players_is_video( $mime_types ) {
 	return strstr( implode( '', (array)$mime_types ), 'video' );
 }
 
 // Push Attachments Onto Global Unit Array And Return Added Units
-function sb_player_units( $post_id, $limit = -1 ) {
-	global $wpdb, $sb_player_interface;
+function players_units( $post_id, $limit = -1 ) {
+	global $wpdb, $players_interface;
 	
 	$units = get_post_meta( $post_id, 'unit', false ); // set "single" (third parameter) to false to pull ALL records with key "unit"
 		
@@ -1797,12 +1799,12 @@ function sb_player_units( $post_id, $limit = -1 ) {
 	foreach( $attachments as $attachment ) {
 		$mime_typez = $attachment->post_mime_type; // "z" because images have a single mime type while videos can have multiple
 		
-		if( $is_video = sb_player_is_video( $mime_typez ) ) {
-			$mime_typez = sb_player_get_mime_types( $attachment->ID );
+		if( $is_video = players_is_video( $mime_typez ) ) {
+			$mime_typez = players_get_mime_types( $attachment->ID );
 			if (empty( $mime_typez )) continue; // must be encoded
 		}
 		
-		if (!sb_player_verify_mime_types( $mime_typez )) continue; // must be supported
+		if (!players_verify_mime_types( $mime_typez )) continue; // must be supported
 		
 		$box = 'library';
 		$order = '';
@@ -1818,10 +1820,10 @@ function sb_player_units( $post_id, $limit = -1 ) {
 		
 		$image_url = $attachment->ID;
 		if( $is_video ) {
-			$screenshots = sb_player_get_screenshots( $attachment->ID );
+			$screenshots = players_get_screenshots( $attachment->ID );
 			$image_url = $screenshots[0]['url'];
 		}
-		$image = sb_player_timthumb( $image_url, $sb_player_interface['media_width'], $sb_player_interface['media_height'] );
+		$image = players_timthumb( $image_url, $players_interface['media_width'], $players_interface['media_height'] );
 		
 		array_push( $new_units, array(
 			'box' 		=> $box,
@@ -1842,21 +1844,21 @@ function sb_player_units( $post_id, $limit = -1 ) {
 }
 
 // Output A Sortable Item To Be Used In "Units" OR "Media Library"
-function sb_player_sortable_item( $unit, $index ) {
-	global $sb_player_interface;
+function players_sortable_item( $unit, $index ) {
+	global $players_interface;
 	
 	$attachment = $unit['attachment'];
 	
-	if( $is_video = sb_player_is_video( $attachment['type'] ) ) {
-		if (!sb_player_tf( sb_player_get_encodes( $attachment['id'] ) )) return; // make sure encodes exist
+	if( $is_video = players_is_video( $attachment['type'] ) ) {
+		if (!players_tf( players_get_encodes( $attachment['id'] ) )) return; // make sure encodes exist
 	}
 	
 	$post = get_post( $attachment['id'] );
 ?>
-	<li id="attachment_id-<?php echo $post->ID; ?>" class="sb_<?php echo $unit['box']; ?> sb_item">
-		<div class="sb_right">
-			<a href="#" class="move-to-library"><?php _e( 'Remove', 'startbox' ); ?></a>
-			<a href="#" class="move-to-units"><?php _e( 'Add', 'startbox' ); ?></a>
+	<li id="attachment_id-<?php echo $post->ID; ?>" class="players_<?php echo $unit['box']; ?> players_item">
+		<div class="players_right">
+			<a href="#" class="move-to-library"><?php _e( 'Remove', 'players' ); ?></a>
+			<a href="#" class="move-to-units"><?php _e( 'Add', 'players' ); ?></a>
 		</div>
 		<div class="not-supported">
 			<strong class="controller-name">Controller</strong> doesn't support<br /><strong class="attachment-type"><?php echo implode( ', ', (array)$attachment['type'] ); ?></strong>
@@ -1864,34 +1866,34 @@ function sb_player_sortable_item( $unit, $index ) {
 		</div>
 		<?php echo '<img src="' . $unit['image'] . '" />'; ?>
         <?php if ($is_video) : ?>
-        <div><label for="unit-title-<?php echo $index; ?>" class="title-label"><?php _e( 'Title:', 'startbox' ); ?></label>
+        <div><label for="unit-title-<?php echo $index; ?>" class="title-label"><?php _e( 'Title:', 'players' ); ?></label>
         <input type="text" class="unit-title" name="unit[<?php echo $index; ?>][post_title]" id="unit-title-<?php echo $index; ?>" 
 			value="<?php echo ($post->post_title != '' ? $post->post_title : ''); ?>" /></div>
         <?php endif; ?>
 		<div style="clear:both;"><textarea name="unit[<?php echo $index; ?>][post_content]"><?php echo $post->post_content; ?></textarea></div>
         <?php if (!$is_video) : ?>
-		<div><label for="unit-link-<?php echo $index; ?>" class="link-label"><?php _e( 'Link to:', 'startbox' ); ?></label>
+		<div><label for="unit-link-<?php echo $index; ?>" class="link-label"><?php _e( 'Link to:', 'players' ); ?></label>
 		<input type="text" class="unit-link" name="unit[<?php echo $index; ?>][post_excerpt]" id="unit-link-<?php echo $index; ?>" 
-			value="<?php echo ($post->post_excerpt != '' ? $post->post_excerpt : $sb_player_interface['link_text']); ?>" /></div>
+			value="<?php echo ($post->post_excerpt != '' ? $post->post_excerpt : $players_interface['link_text']); ?>" /></div>
         <?php endif; ?>
 		<div><input type="hidden" name="unit[<?php echo $index; ?>][attachment_id]" 
 			value="<?php echo $post->ID; ?>" /></div>
-		<div><input type="hidden" name="unit[<?php echo $index; ?>][box]" class="sb_box" 
+		<div><input type="hidden" name="unit[<?php echo $index; ?>][box]" class="players_box" 
 			value="<?php echo $unit['box']; ?>" /></div>
-		<div><input type="hidden" name="unit[<?php echo $index; ?>][order]" class="sb_order" 
+		<div><input type="hidden" name="unit[<?php echo $index; ?>][order]" class="players_order" 
 			value="<?php echo $unit['order']; ?>" /></div>
 	</li>
 <?php
 }
 
 // Save Custom Data
-function sb_player_save( $post_id ) {
-	global $sb_player_interface, $sb_player_controllers;
+function players_save( $post_id ) {
+	global $players_interface, $players_controllers;
 	
-	if (!isset( $_POST['sb_noncename'] ) || !wp_verify_nonce( $_POST['sb_noncename'], plugin_basename( __FILE__ ) ) // security check
+	if (!isset( $_POST['players_noncename'] ) || !wp_verify_nonce( $_POST['players_noncename'], plugin_basename( __FILE__ ) ) // security check
 		|| defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE // avoid auto save routine
 		|| 'page' == $_POST['post_type'] && !(current_user_can( 'edit_page', $post_id ) || current_user_can( 'edit_post', $post_id )) // check permissions
-		|| !sb_player_verify_post_type()) return $post_id; // verify post type
+		|| !players_verify_post_type()) return $post_id; // verify post type
 	
 	delete_post_meta( $post_id, 'unit' ); // flush all post meta entries with "unit" as their key
 	
@@ -1910,7 +1912,7 @@ function sb_player_save( $post_id ) {
 			'ID' 		=> $unit['attachment_id'], 
 			'post_title'	=> apply_filters( 'link_title', (isset( $unit['post_title'] ) ? $unit['post_title'] : '') ),
 			'post_excerpt' => apply_filters( 'pre_link_url', 
-							(isset( $unit['post_excerpt'] ) && $unit['post_excerpt'] !== $sb_player_interface['link_text'] ? $unit['post_excerpt'] : '') ),
+							(isset( $unit['post_excerpt'] ) && $unit['post_excerpt'] !== $players_interface['link_text'] ? $unit['post_excerpt'] : '') ),
 			'post_content'	=> apply_filters( 'link_description', (isset( $unit['post_content'] ) ? $unit['post_content'] : '') ) ) );
 		
 		if ($unit['box'] == 'library') continue; // stop here if unit is from library
@@ -1922,8 +1924,8 @@ function sb_player_save( $post_id ) {
 		
 		// from here on is just doing some checks to figure out the max and min image heights and widths
 		
-		$settings = $sb_player_controllers[$_POST['player']['controller']]; // get chosen controller settings
-		if (!sb_player_verify_mime_types( sb_player_get_mime_types( $unit['attachment_id'] ), $settings['mime_types'] ))
+		$settings = $players_controllers[$_POST['player']['controller']]; // get chosen controller settings
+		if (!players_verify_mime_types( players_get_mime_types( $unit['attachment_id'] ), $settings['mime_types'] ))
 			continue; // skip if this unit won't be supported by the controller
 		
 		$md = wp_get_attachment_metadata( $unit['attachment_id'] ); // attachment metadata
@@ -1947,119 +1949,119 @@ function sb_player_save( $post_id ) {
 	
 	return $post_id;
 }
-add_action( 'save_post', 'sb_player_save' );
+add_action( 'save_post', 'players_save' );
 
 // Handle Shortcode
-function sb_player_shortcode( $atts, $content = NULL ) {
-	global $sb_player_controllers;
+function players_shortcode( $atts, $content = NULL ) {
+	global $players_controllers;
 	
 	extract( shortcode_atts( array( 'id' => 0 ), $atts ) );
 	
 	// set up some error variables
 	$lnk = '<a href="' . get_admin_url() . 'post.php?post=' . $id . '&amp;action=edit">' . $id . '</a>';
-	$err = '<strong>' . __( 'Error', 'startbox' ) . ':</strong>';
+	$err = '<strong>' . __( 'Error', 'players' ) . ':</strong>';
 	
 	// get various options stored as post meta records	
 	$player = get_post_meta( $id, 'player', true );
-	if ($player == '') return sprintf( __( '%s Player %s does not exist.', 'startbox' ), $err, $lnk );
+	if ($player == '') return sprintf( __( '%s Player %s does not exist.', 'players' ), $err, $lnk );
 	$controller = get_post_meta( $id, 'controller', true );
 	
 	// set up some general purpose variables
-	$settings = $sb_player_controllers[$player['controller']];
+	$settings = $players_controllers[$player['controller']];
 	if (empty( $settings ))
-		return sprintf( __( '%s Player %s is asking for %s, a controller that does not exist.', 'startbox' ), $err, $lnk, '<strong>' . $player['controller'] . '</strong>' );
+		return sprintf( __( '%s Player %s is asking for %s, a controller that does not exist.', 'players' ), $err, $lnk, '<strong>' . $player['controller'] . '</strong>' );
 	$current_controller = $controller[$player['controller']];
 	$dimensions = $player['size'][$player['size']['selected']];
 	
 	// get and sort all units stored as post meta records
 	$units = get_post_meta( $id, 'unit', false ); // set single (third parameter) to false to pull ALL records with key "unit"
-	usort( $units, 'sb_player_sort_order' ); // order the elements of the array
+	usort( $units, 'players_sort_order' ); // order the elements of the array
 	
 	$attachments = array();
 	foreach( $units as $unit ) {
 		$attachment = get_post( $unit['attachment_id'] );
 		
-		if (!sb_player_verify_mime_types( sb_player_get_mime_types( $attachment->ID ), $settings['mime_types'] ))
+		if (!players_verify_mime_types( players_get_mime_types( $attachment->ID ), $settings['mime_types'] ))
 			continue; // ignore if mime type not supported
 		
 		array_push( $attachments, $attachment );
 	}
 	
-	if (empty( $attachments )) return sprintf( __( '%s Player %s contains no useable content.', 'startbox' ), $err, $lnk );
+	if (empty( $attachments )) return sprintf( __( '%s Player %s contains no useable content.', 'players' ), $err, $lnk );
 	
-	return call_user_func( $sb_player_controllers[$player['controller']]['shortcode_cb'], 
-		sb_player_verify_id( $id ), get_the_title( $id ), $dimensions, $current_controller, $attachments );
+	return call_user_func( $players_controllers[$player['controller']]['shortcode_cb'], 
+		players_verify_id( $id ), get_the_title( $id ), $dimensions, $current_controller, $attachments );
 }
-add_shortcode( 'player', 'sb_player_shortcode' );
+add_shortcode( 'player', 'players_shortcode' );
 
 // Footer JS
-function sb_player_footerjs( $index, $string, $priority = 10 ) {
-	global $sb_player_footerjs;
+function players_footerjs( $index, $string, $priority = 10 ) {
+	global $players_footerjs;
 	
-	$sb_player_footerjs[$index] = array( 'js' => $string, 'order' => $priority );
+	$players_footerjs[$index] = array( 'js' => $string, 'order' => $priority );
 }
 
 // Add Custom Management Columns
-function sb_player_columns( $columns ) {
+function players_columns( $columns ) {
 	unset( $columns['date'] ); // remove date column
-	$columns['controller'] = __( 'Controller', 'startbox' );
-	$columns['id'] = __( 'ID', 'startbox' );
-	$columns['shortcode'] = __( 'Shortcode', 'startbox' );
-	$columns['date'] = __( 'Date', 'startbox' ); // add date column back, at the end
+	$columns['controller'] = __( 'Controller', 'players' );
+	$columns['id'] = __( 'ID', 'players' );
+	$columns['shortcode'] = __( 'Shortcode', 'players' );
+	$columns['date'] = __( 'Date', 'players' ); // add date column back, at the end
 	
 	return $columns;
 }
-add_filter( 'manage_edit-player_columns', 'sb_player_columns', 10, 1 );
+add_filter( 'manage_edit-player_columns', 'players_columns', 10, 1 );
 
 // Handle Custom Management Columns
-function sb_player_custom_columns( $column, $post_id ) {	
+function players_custom_columns( $column, $post_id ) {	
 	switch( $column ) {
 		case 'controller':
-			global $sb_player_controllers;
+			global $players_controllers;
 			$player = get_post_meta( $post_id, 'player', true );
-			$controller = $sb_player_controllers[$player['controller']]['nicename'];
-			echo (empty( $controller ) ? $player['controller'] . '<div style="color:red;">' . __( '(missing)', 'startbox' ) . '</div>' : $controller);
+			$controller = $players_controllers[$player['controller']]['nicename'];
+			echo (empty( $controller ) ? $player['controller'] . '<div style="color:red;">' . __( '(missing)', 'players' ) . '</div>' : $controller);
 		break;
 		case 'id':
 			echo $post_id;
 		break;
 		case 'shortcode':
-			echo sb_player_embed_input( $post_id );
+			echo players_embed_input( $post_id );
 		break;
 	}
 }
-add_action( 'manage_player_posts_custom_column', 'sb_player_custom_columns', 10, 2 );
+add_action( 'manage_player_posts_custom_column', 'players_custom_columns', 10, 2 );
 
 // Filter Player Post Content (for when visiting a players public URL)
-function sb_player_content_filter( $content ) {
+function players_content_filter( $content ) {
 	global $post, $pagenow;
 	
-	if (sb_player_verify_post_type()) {
+	if (players_verify_post_type()) {
 		if ($pagenow == 'edit.php')
-			return count( get_post_meta( $post->ID, 'unit', false ) ) . __( ' items', 'startbox' );
+			return count( get_post_meta( $post->ID, 'unit', false ) ) . __( ' items', 'players' );
 		else
 			return '[player id="' . $post->ID . '"]';
 	} else {
 		return $content;
 	}
 }
-add_filter( 'the_content', 'sb_player_content_filter' );
+add_filter( 'the_content', 'players_content_filter' );
 
 // Add Javascript To Footer On Front End Only
-function sb_player_footer_javascript() {	
-	global $sb_player_footerjs;
+function players_footer_javascript() {	
+	global $players_footerjs;
 	
-	if (empty( $sb_player_footerjs )) return; // don't add unnecessary javascript to footer
+	if (empty( $players_footerjs )) return; // don't add unnecessary javascript to footer
 ?>
 	<script type="text/javascript">
 	;(function($) {
 		$(document).ready( function() {
 			$(document).bind( 'scriptsLoaded', function() {
 <?php
-			usort( $sb_player_footerjs, 'sb_player_sort_order' );
+			usort( $players_footerjs, 'players_sort_order' );
 			
 			// output formatted javascript
-			foreach ($sb_player_footerjs as $js) 
+			foreach ($players_footerjs as $js) 
 				echo "\n\t\t\t" . str_replace( "\n", "\n\t\t\t", str_replace( "\t", '', $js['js'] ) ) . "\n";
 ?>
 			});
@@ -2068,40 +2070,40 @@ function sb_player_footer_javascript() {
 	</script>
 <?php
 }
-add_action( 'wp_footer', 'sb_player_footer_javascript' );
+add_action( 'wp_footer', 'players_footer_javascript' );
 
 // Add Plugin Scripts To Head On Back End Post Pages
-function sb_player_post_admin_print_scripts() {
+function players_post_admin_print_scripts() {
 	// enqueue scripts
 	wp_enqueue_script( 'jquery-ui-core' );
 	wp_enqueue_script( 'jquery-ui-sortable' );
 	wp_enqueue_script( 'jquery-ui-widget' );
 	wp_enqueue_script( 'jquery-ajaxuploader', plugins_url( 'assets/ajaxupload.js', __FILE__ ) );
 }
-add_action( 'admin_print_scripts-post.php', 'sb_player_post_admin_print_scripts' );
-add_action( 'admin_print_scripts-post-new.php', 'sb_player_post_admin_print_scripts' );
+add_action( 'admin_print_scripts-post.php', 'players_post_admin_print_scripts' );
+add_action( 'admin_print_scripts-post-new.php', 'players_post_admin_print_scripts' );
 
 // Add Plugin Javascript And Style To Head On Back End Post Pages
-function sb_player_post_admin_head() {
-	if (!sb_player_verify_post_type()) return; // verify post type
+function players_post_admin_head() {
+	if (!players_verify_post_type()) return; // verify post type
 	
-	global $post, $sb_player_interface, $sb_player_controllers, $sb_player_units;
+	global $post, $players_interface, $players_controllers, $players_units;
 	
 	$attachments = array();
-	foreach ($sb_player_units as $unit) array_push( $attachments, $unit['attachment'] );
+	foreach ($players_units as $unit) array_push( $attachments, $unit['attachment'] );
 ?>
 	<script type="text/javascript">
 		//<![CDATA[
 		;(function( $ ) {
 			$(document).ready( function(){
 				var attachments = <?php echo json_encode( $attachments ); ?>;
-				var controllers = <?php echo json_encode( $sb_player_controllers ); ?>;
+				var controllers = <?php echo json_encode( $players_controllers ); ?>;
 				// sortable container resize
 				function container_resize() {
-					$.each( ['#sb_player_units', '#sb_player_library'], function( index, obj ) {
+					$.each( ['#players_units', '#players_library'], function( index, obj ) {
 						$(obj).removeClass( 'closed' ); // make sure meta box is opened before calculating width
 						var sortable = $('ul.connectedSortable', obj);
-						sortable.outerWidth( ($('li.sb_item:visible', sortable).length + 1) * $('li.sb_item:visible:first', sortable).outerWidth() );
+						sortable.outerWidth( ($('li.players_item:visible', sortable).length + 1) * $('li.players_item:visible:first', sortable).outerWidth() );
 						$('div.scrollingHotSpotLeft, div.scrollingHotSpotRight', obj).outerHeight( sortable.outerHeight() );
 					});
 					
@@ -2111,21 +2113,21 @@ function sb_player_post_admin_head() {
 				
 				// update hidden sortable inputs
 				function hidden_inputs() {
-					$('#sb_player_units ul.connectedSortable li').each( function( index ) {
-						$('.sb_order', this).val( index );
+					$('#players_units ul.connectedSortable li').each( function( index ) {
+						$('.players_order', this).val( index );
 					});
-					$('#sb_player_units ul.connectedSortable li .sb_box').val( 'units' );
-					$('#sb_player_library ul.connectedSortable li .sb_box').val( 'library' );
+					$('#players_units ul.connectedSortable li .players_box').val( 'units' );
+					$('#players_library ul.connectedSortable li .players_box').val( 'library' );
 				}
 				
 				// prepend an item to a box
-				function prepend_to( location, sb_item ) {
-					var sortable = $('#sb_player_' + location + ' ul.connectedSortable');
+				function prepend_to( location, players_item ) {
+					var sortable = $('#players_' + location + ' ul.connectedSortable');
 					sortable.parent().stop().animate({ scrollLeft: 0 }, 'slow'); // alternative: sortable.outerWidth() - $(this).scrollLeft()
-					sb_item = $(sb_item); // force object
-					sb_item.fadeOut( 'fast', function() {
-						sb_item.prependTo( sortable ); // alternative: append
-						sb_item.fadeIn('slow');
+					players_item = $(players_item); // force object
+					players_item.fadeOut( 'fast', function() {
+						players_item.prependTo( sortable ); // alternative: append
+						players_item.fadeIn('slow');
 						filter_library();
 						container_resize();
 						hidden_inputs();
@@ -2134,36 +2136,36 @@ function sb_player_post_admin_head() {
 				
 				// move sortable item via add/remove link
 				$('.move-to-library').live( 'click', function() {
-					prepend_to( 'library', $(this).parent('div.sb_right').parent('li.sb_item') );
+					prepend_to( 'library', $(this).parent('div.players_right').parent('li.players_item') );
 					return false;
 				});
 				$('.move-to-units').live( 'click', function() {
-					prepend_to( 'units', $(this).parent('div.sb_right').parent('li.sb_item') );
+					prepend_to( 'units', $(this).parent('div.players_right').parent('li.players_item') );
 					return false;
 				});
 	
 				// connected sortable lists
-				$('#sb_player_units ul.connectedSortable, #sb_player_library ul.connectedSortable').sortable({
+				$('#players_units ul.connectedSortable, #players_library ul.connectedSortable').sortable({
 					connectWith: '.connectedSortable',
 					handle: 'img',
 					forceHelperSize: false,
 					forcePlaceholderSize: true,
 					helper: function( ev, el ) { return $('img', el).clone().width( <?php 
-						echo floor( $sb_player_interface['media_width'] / 3 ); ?>).height( <?php 
-						echo floor( $sb_player_interface['media_height'] / 3 ); ?>); },
+						echo floor( $players_interface['media_width'] / 3 ); ?>).height( <?php 
+						echo floor( $players_interface['media_height'] / 3 ); ?>); },
 					placeholder: 'placeholder',
 					revert: true,
 					cursor: 'move',
-					cursorAt: { top: -1, left: <?php echo floor( $sb_player_interface['media_height'] / 4.2 ); ?> },
+					cursorAt: { top: -1, left: <?php echo floor( $players_interface['media_height'] / 4.2 ); ?> },
 					containment: '#normal-sortables',
 					scrollSensitivity: 0,
 					tolerance: 'pointer'
 				});
-				$('#sb_player_units ul.connectedSortable, #sb_player_library ul.connectedSortable').bind( 'sortreceive', function( ev, ui ) {
+				$('#players_units ul.connectedSortable, #players_library ul.connectedSortable').bind( 'sortreceive', function( ev, ui ) {
 					filter_library();
 					container_resize();
 				});
-				$('#sb_player_units ul.connectedSortable').bind('sortupdate', function( ev, ui ) {
+				$('#players_units ul.connectedSortable').bind('sortupdate', function( ev, ui ) {
 					hidden_inputs();
 				});
 				
@@ -2171,7 +2173,7 @@ function sb_player_post_admin_head() {
 				var interval_id = 0;
 				$('div.scrollingHotSpotLeft, div.scrollingHotSpotRight').mouseenter( function() {
 					var scrollDiv = $(this).parent();
-					var scrollAmount = $('li.sb_item:first', scrollDiv).outerWidth() * 2;
+					var scrollAmount = $('li.players_item:first', scrollDiv).outerWidth() * 2;
 					scrollAmount *= ($(this).attr('class') == 'scrollingHotSpotLeft' ? -1 : 1);
 						
 					if( interval_id == 0 ) {
@@ -2277,7 +2279,7 @@ function sb_player_post_admin_head() {
 							if (stopFiltering) return false; // stop if mid-way through when a new filter is initiated
 						}
 											
-						unit = $('#sb_player_library ul.connectedSortable li#attachment_id-' + attachment.id);
+						unit = $('#players_library ul.connectedSortable li#attachment_id-' + attachment.id);
 						
 						if( unit.length != 0 ) { // check if unit exists
 							var hide = false;
@@ -2314,8 +2316,8 @@ function sb_player_post_admin_head() {
 						$('option:selected', this).removeAttr( 'selected' );
 						$('option:first', this).attr( 'selected', 'selected' );
 					});
-					$('div#libraryFilters input#filter_width').val( <?php echo $sb_player_interface['filter_width']; ?> );
-					$('div#libraryFilters input#filter_height').val( <?php echo $sb_player_interface['filter_height']; ?> );
+					$('div#libraryFilters input#filter_width').val( <?php echo $players_interface['filter_width']; ?> );
+					$('div#libraryFilters input#filter_height').val( <?php echo $players_interface['filter_height']; ?> );
 					
 					filter_library();
 					
@@ -2329,7 +2331,7 @@ function sb_player_post_admin_head() {
 				new AjaxUpload( $('a#uploadlink'), {
 					action: ajaxurl,
 					name: fid,
-					data: { action: 'sb_player_handle_upload_ajax', _ajax_nonce: '<?php echo wp_create_nonce( plugin_basename( __FILE__ ) ); ?>', file_id: fid },
+					data: { action: 'players_handle_upload_ajax', _ajax_nonce: '<?php echo wp_create_nonce( plugin_basename( __FILE__ ) ); ?>', file_id: fid },
 					responseType: 'json',
 					onSubmit: function( file , ext ) {
 						if( ext && /^(jpg|png|jpeg|gif)$/.test( ext ) ) {
@@ -2347,7 +2349,7 @@ function sb_player_post_admin_head() {
 							$('span#uploadresult').html( '<a href="' + response.full + '" target="_blank" class="previewlink">' + file + '</a> has been uploaded!' );
 							
 							var offset = $(attachments).length;
-							$.post(ajaxurl, { action: 'sb_player_upload', id: '<?php echo $post->ID; ?>', index_offset: offset }, function(response) {								
+							$.post(ajaxurl, { action: 'players_upload', id: '<?php echo $post->ID; ?>', index_offset: offset }, function(response) {								
 								attachments[offset] = $.parseJSON( response.object ); // append to attachments array
 								addToSelect( 'type', attachments[offset]['type'], null ); // add mime type to filter area if not already present
 								
@@ -2417,10 +2419,10 @@ function sb_player_post_admin_head() {
 				
 				// clear default link
 				$('input.unit-link').live( 'focus', function() {
-					if ($(this).val() == '<?php echo $sb_player_interface['link_text']; ?>') $(this).val( '' );
+					if ($(this).val() == '<?php echo $players_interface['link_text']; ?>') $(this).val( '' );
 				});
 				$('input.unit-link').live( 'blur', function() {
-					if ($(this).val() == '') $(this).val( '<?php echo $sb_player_interface['link_text']; ?>' );
+					if ($(this).val() == '') $(this).val( '<?php echo $players_interface['link_text']; ?>' );
 				});
 				
 				function verify_mime_type( val, arr ) {
@@ -2436,7 +2438,7 @@ function sb_player_post_admin_head() {
 				// show controller info
 				function change_controller() {
 					// info and options
-					$('div.sb_controller').hide();
+					$('div.players_controller').hide();
 					var select_val = $('select#controller').val();
 					var theClass = $('.controller-' + select_val);
 					theClass.show();
@@ -2466,8 +2468,8 @@ function sb_player_post_admin_head() {
 	
 	<style type="text/css">
 		/* units and library */
-		#sb_player_units div.inside,
-		#sb_player_library div.inside { position:relative; }
+		#players_units div.inside,
+		#players_library div.inside { position:relative; }
 		div.scrollingContainer {
 			overflow:auto;
 			white-space:nowrap;
@@ -2484,69 +2486,69 @@ function sb_player_post_admin_head() {
 		ul.connectedSortable li,
 		.ui-sortable-helper { padding:5px; }
 		.placeholder { background:#257DA6 !important; }
-		div.sb_right { position:absolute; top:1px; right:2px; padding:5px 10px; }
-		div.sb_right a { text-decoration:none; }		
+		div.players_right { position:absolute; top:1px; right:2px; padding:5px 10px; }
+		div.players_right a { text-decoration:none; }		
 		
 		/* units */
-		#sb_player_units ul.connectedSortable { 
-			min-width:<?php echo $sb_player_interface['media_width'] * 2; ?>px; 
-			min-height:<?php echo $sb_player_interface['media_height'] + 87; ?>px; 
+		#players_units ul.connectedSortable { 
+			min-width:<?php echo $players_interface['media_width'] * 2; ?>px; 
+			min-height:<?php echo $players_interface['media_height'] + 87; ?>px; 
 		}
-		#sb_units.closed ul.connectedSortable { min-height:0; }
-		#sb_player_units ul.connectedSortable img { 
+		#players_units.closed ul.connectedSortable { min-height:0; }
+		#players_units ul.connectedSortable img { 
 			margin-bottom:5px;
-			width:<?php echo $sb_player_interface['media_width']; ?>px; 
-			height:<?php echo $sb_player_interface['media_height']; ?>px; 
+			width:<?php echo $players_interface['media_width']; ?>px; 
+			height:<?php echo $players_interface['media_height']; ?>px; 
 		}
-		#sb_player_units .placeholder { 
-			width:<?php echo $sb_player_interface['media_width'] + 2; ?>px; 
-			height:<?php echo $sb_player_interface['media_height'] + 77; ?>px; 
+		#players_units .placeholder { 
+			width:<?php echo $players_interface['media_width'] + 2; ?>px; 
+			height:<?php echo $players_interface['media_height'] + 77; ?>px; 
 		}
-		#sb_player_units ul.connectedSortable textarea {
-			width:<?php echo $sb_player_interface['media_width']; ?>px;
+		#players_units ul.connectedSortable textarea {
+			width:<?php echo $players_interface['media_width']; ?>px;
 			height:50px;
 			display:block;
 		}
-		#sb_player_units label.title-label,
-		#sb_player_units label.link-label { float:left; width:45px; line-height:32px; }
-		#sb_player_units label.link-label { width:55px; }
-		#sb_player_units input.unit-link,
-		#sb_player_units input.unit-title {
+		#players_units label.title-label,
+		#players_units label.link-label { float:left; width:45px; line-height:32px; }
+		#players_units label.link-label { width:55px; }
+		#players_units input.unit-link,
+		#players_units input.unit-title {
 			height:25px;
 			display:block;
 			margin-top:5px;
-			width:<?php echo $sb_player_interface['media_width'] - 54; ?>px;
+			width:<?php echo $players_interface['media_width'] - 54; ?>px;
 		}
-		#sb_player_units input.unit-title { 
+		#players_units input.unit-title { 
 			margin-top:0;
 			margin-bottom:5px;
-			width:<?php echo $sb_player_interface['media_width'] - 44; ?>px;
+			width:<?php echo $players_interface['media_width'] - 44; ?>px;
 		}
-		#sb_player_units div.sb_right a.move-to-units { display:none; }
+		#players_units div.players_right a.move-to-units { display:none; }
 		div.not-supported { 
 			position:absolute; 
-			top:<?php echo $sb_player_interface['media_height'] / 2; ?>px; 
+			top:<?php echo $players_interface['media_height'] / 2; ?>px; 
 			text-align:center; 
-			width:<?php echo $sb_player_interface['media_width']; ?>px;
+			width:<?php echo $players_interface['media_width']; ?>px;
 			white-space:normal;
 		}
 		
 		/* library */
-		#sb_player_library ul.connectedSortable { 
-			min-width:<?php echo $sb_player_interface['media_width'] * 2; ?>px; 
-			min-height:<?php echo ($sb_player_interface['media_height'] / 3) + 10; ?>px; 
+		#players_library ul.connectedSortable { 
+			min-width:<?php echo $players_interface['media_width'] * 2; ?>px; 
+			min-height:<?php echo ($players_interface['media_height'] / 3) + 10; ?>px; 
 		}
-		#sb_player_library ul.connectedSortable img,
-		#sb_player_library .placeholder {
-			width:<?php echo floor($sb_player_interface['media_width'] / 3); ?>px;
-			height:<?php echo floor($sb_player_interface['media_height'] / 3); ?>px;
+		#players_library ul.connectedSortable img,
+		#players_library .placeholder {
+			width:<?php echo floor($players_interface['media_width'] / 3); ?>px;
+			height:<?php echo floor($players_interface['media_height'] / 3); ?>px;
 		}
-		#sb_player_library ul.connectedSortable textarea,
-		#sb_player_library ul.connectedSortable label,
-		#sb_player_library input.unit-link,
-		#sb_player_library input.unit-title,
-		#sb_player_library div.sb_right a.move-to-library,
-		#sb_player_library div.not-supported { display:none !important; }
+		#players_library ul.connectedSortable textarea,
+		#players_library ul.connectedSortable label,
+		#players_library input.unit-link,
+		#players_library input.unit-title,
+		#players_library div.players_right a.move-to-library,
+		#players_library div.not-supported { display:none !important; }
 		
 		/* scrolling hotspots */
 		div.scrollingHotSpotLeft,
@@ -2579,10 +2581,10 @@ function sb_player_post_admin_head() {
 		/* interface */
 		div.scrollingContainer, 
 		.ui-sortable-helper, 
-		div.sb_right, 
+		div.players_right, 
 		div.not-supported,
 		ul.connectedSortable li {
-			background:<?php echo $sb_player_interface['color']; ?>;
+			background:<?php echo $players_interface['color']; ?>;
 		}
 		input.pixelfield { width:44px; }
 		input.urlfield { width:155px; }
@@ -2600,7 +2602,7 @@ function sb_player_post_admin_head() {
 			padding-left:10px;
 			border-left:1px solid #EAEAEA;
 		}
-		div.sb_controller { display:none; }
+		div.players_controller { display:none; }
 		p.subopt {
 			padding-left:11px;
 			background: url(<?php echo plugins_url( 'assets/images/dr_arrow.png', __FILE__ ); ?>) no-repeat;
@@ -2610,11 +2612,11 @@ function sb_player_post_admin_head() {
 	</style>
 <?php
 }
-add_action( 'admin_head-post.php', 'sb_player_post_admin_head' );
-add_action( 'admin_head-post-new.php', 'sb_player_post_admin_head' );
+add_action( 'admin_head-post.php', 'players_post_admin_head' );
+add_action( 'admin_head-post-new.php', 'players_post_admin_head' );
 
 // Handle Files Uploaded Via Ajax
-function sb_player_handle_upload_ajax() {
+function players_handle_upload_ajax() {
 	check_ajax_referer( plugin_basename( __FILE__ ) ); // security
 	
 	$error = $result = '';
@@ -2637,27 +2639,27 @@ function sb_player_handle_upload_ajax() {
 	
 	die( htmlspecialchars( json_encode( $result ), ENT_NOQUOTES ) ); 
 }
-add_action( 'wp_ajax_sb_player_handle_upload_ajax', 'sb_player_handle_upload_ajax' );
+add_action( 'wp_ajax_players_handle_upload_ajax', 'players_handle_upload_ajax' );
 
 // Add Uploaded File To Library
-function sb_player_upload() {
+function players_upload() {
 	// create unit array for newest attachment
-	$units = sb_player_units( (int)$_POST['id'], 1 );
+	$units = players_units( (int)$_POST['id'], 1 );
 	$unit = $units[0];
 	
 	ob_start();
-	sb_player_sortable_item( $unit, (int)$_POST['index_offset'] );
+	players_sortable_item( $unit, (int)$_POST['index_offset'] );
 	$html = ob_get_clean();
 
 	die( json_encode( array( 
 		'object' 	=> json_encode( $unit['attachment'] ), 
 		'html' 	=> $html ) ) );
 }
-add_action( 'wp_ajax_sb_player_upload', 'sb_player_upload' );
+add_action( 'wp_ajax_players_upload', 'players_upload' );
 
 // Add Plugin Style To Head On Back End Edit Page
-function sb_player_edit_admin_style() {
-	if (!sb_player_verify_post_type()) return; // verify post type
+function players_edit_admin_style() {
+	if (!players_verify_post_type()) return; // verify post type
 ?>
 	<style type="text/css">
 		th.column-controller { width:100px; }
@@ -2667,5 +2669,5 @@ function sb_player_edit_admin_style() {
 	</style>
 <?php
 }
-add_action( 'admin_print_styles-edit.php', 'sb_player_edit_admin_style' );
+add_action( 'admin_print_styles-edit.php', 'players_edit_admin_style' );
 ?>

@@ -1,7 +1,7 @@
 === Players ===
 Contributors: leoj3n
-Donate link: http://joelak.com/
-Tags: video, slideshow, embed, jwplayer, nivo
+Donate link: http://playersplugin.com/
+Tags: video, image, gallery, slideshow, jwplayer, nivo, embed
 Requires at least: 3.0.0
 Tested up to: 3.0
 Stable tag: 1.0
@@ -19,13 +19,13 @@ This plugin creates a custom post type called Players which integrates with the 
 
 == Frequently Asked Questions ==
 
-= A question that someone might have =
+= What if I want to use players to feature video content? =
 
-An answer to that question.
+Once the plugin is installed there will be a menu item `Players > Store` where advanced controllers can be purchased. Purchase the JW Player controller.
 
-= What about foo bar? =
+= What if I want to use ffmpeg to post processes video uploads on the server? =
 
-Answer to foo bar dilemma.
+If you host your own server, install the latest version of ffmpeg (http://ffmpeg.org/). If you are on shared hosting, chances are ffmpeg is already installed, but it might an outdated version. Make sure the ffmpeg path and version are valid under the `Players > Settings` page.
 
 == Screenshots ==
 

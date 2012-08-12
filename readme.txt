@@ -25,7 +25,7 @@ Once the plugin is installed there will be a menu item `Players > Store` where a
 
 = What if I want to use ffmpeg to post processes video uploads on the server? =
 
-If you host your own server, install the latest version of ffmpeg (http://ffmpeg.org/). If you are on shared hosting, chances are ffmpeg is already installed, but it might an outdated version. Make sure the ffmpeg path and version are valid under the `Players > Settings` page.
+If you host your own server, install the latest version of ffmpeg (http://ffmpeg.org/). If you are on shared hosting, chances are ffmpeg is already installed, but it might be an outdated version. Make sure the ffmpeg path and version are valid under the `Players > Settings` page.
 
 == Screenshots ==
 

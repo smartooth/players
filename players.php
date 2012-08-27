@@ -8,7 +8,7 @@ Author: Joel Kuczmarski
 Author URI: http://www.joelak.com
 License: GPL2
 
-    Copyright 2011  Joel KUCZMARSKI  (email : leoj3n at gmail dot com)
+    Copyright 2012  Joel KUCZMARSKI  (email : leoj3n at gmail dot com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as 
@@ -28,13 +28,17 @@ License: GPL2
 if( version_compare( PHP_VERSION, '5.2', '<' ) ) {
 	if( is_admin() && !(defined( 'DOING_AJAX' ) || DOING_AJAX) ) {
 		require_once admin_url( 'includes/plugin.php' );
-		deactivate_plugins( __FILE__ );
+		deactivate_plugins( PLAYERS_PATH );
 		wp_die( __( 'Players requires PHP 5.2 or higher, as does WordPress 3.2 and higher. The plugin has now disabled itself.', 'players' ) . 
 			' <a href="javascript:history.go( -1 );">' . __( 'go back', 'players' ) . ' &rarr;</a>' );
 	} else {
 		return;
 	}
 }
+
+define( 'PLAYERS_PATH', apply_filters( 'players_path', 'players/players.php' ) );
+define( 'PLAYERS_CONTROLLERS_PATH', apply_filters( 'players_controllers_path', 'players/controllers/*' ) );
+define( 'PLAYERS_ASSETS_PATH', apply_filters( 'players_assets_path', 'players/assets/*' ) );
 
 // Include Lazy Load Plugin
 if (!function_exists( 'lazyload_template_redirect' )) 
@@ -61,7 +65,7 @@ $players_interface = apply_filters( 'players_interface', array(
 	'media_height' 	=> 188,
 	'filter_width'		=> 60,
 	'filter_height' 	=> 60 ) );
-$players_timthumb_path = apply_filters( 'players_timthumb_path', plugins_url( 'assets/timthumb/timthumb.php', __FILE__ ) );
+$players_timthumb_path = apply_filters( 'players_timthumb_path', plugins_url( 'assets/timthumb/timthumb.php', PLAYERS_PATH ) );
 $players_options = apply_filters( 'players_options', 'players_options' );
 $players_options_page = apply_filters( 'players_options_page', 'options' );
 $file_version = '1.0.0'; // should match the "Version" definition in the header of this file
@@ -79,7 +83,7 @@ function players_install() {
 	
 	players_update_option( 'ffmpeg_queue', array() );
 }
-register_activation_hook( __FILE__, 'players_install' );
+register_activation_hook( PLAYERS_PATH, 'players_install' );
 
 // Updgrade Function
 function players_upgrade() {
@@ -740,7 +744,7 @@ function players_upload_admin_head() {
 	<style type="text/css">
 		.encoded, .not-encoded, .encoding {
 			padding-left:14px;
-			background:url(<?php echo plugins_url( 'assets/images/encoded.png', __FILE__ ); ?>) 3px center no-repeat;
+			background:url(<?php echo plugins_url( 'assets/images/encoded.png', PLAYERS_PATH ); ?>) 3px center no-repeat;
 		}
 		.encoded { width:66px; background-color:#C7F464 !important; }
 		.not-encoded { background-color:#FF6B6B !important; }
@@ -1023,7 +1027,7 @@ add_action( 'wp_ajax_encode_icon', 'players_encode_icon' );
 
 // Return Streamer Link
 function players_streamer( $file_path ) {
-	return plugins_url( 'assets/streamer.php?file_path=', __FILE__ ) . $file_path;
+	return plugins_url( 'assets/streamer.php?file_path=', PLAYERS_PATH ) . $file_path;
 }
 
 /************************************************************************************************
@@ -1263,7 +1267,7 @@ add_action( 'admin_menu', 'players_admin_menu' );
 function players_action_links( $links, $file ) {
 	global $players_options_page;
 	
-	if ($file == plugin_basename( __FILE__ )) $links[] = '<a href="edit.php?post_type=player&page=' . $players_options_page . '">' . __( 'Settings' ) . '</a>';
+	if ($file == plugin_basename( PLAYERS_PATH )) $links[] = '<a href="edit.php?post_type=player&page=' . $players_options_page . '">' . __( 'Settings' ) . '</a>';
 
 	return $links;
 }
@@ -1274,14 +1278,14 @@ function players_admin_head() { ?>
 	<style type="text/css">
 		/* icons */
 		#menu-posts-player .wp-menu-image {
-			background:url(<?php echo plugins_url( 'assets/images/icon.png', __FILE__ ); ?>) no-repeat 6px -33px !important;
+			background:url(<?php echo plugins_url( 'assets/images/icon.png', PLAYERS_PATH ); ?>) no-repeat 6px -33px !important;
 		}
 		#menu-posts-player:hover .wp-menu-image,
 		#menu-posts-player.wp-has-current-submenu .wp-menu-image {
 			background-position:6px -1px !important;
 		}
 		#icon-edit.icon32-posts-player {
-			background: url(<?php echo plugins_url( 'assets/images/icon32.png', __FILE__ ); ?>) no-repeat;
+			background: url(<?php echo plugins_url( 'assets/images/icon32.png', PLAYERS_PATH ); ?>) no-repeat;
 		}
 	</style>
 <?php }
@@ -1476,7 +1480,7 @@ function players_options_page() {
 	</ol>
 	
 	<?php
-	$directory = dirname( __FILE__ ) . '/controllers/';
+	$directory = dirname( PLAYERS_PATH ) . '/controllers/';
 	$glob = glob( $directory . '*.php' );
 	$count = count( $glob );
 	$files = '';
@@ -1517,7 +1521,7 @@ function players_meta_box_callback() {
 // Output "units" Meta Box
 function players_units_meta() {
 	echo '<input type="hidden" name="players_noncename" id="players_noncename" 
-		value="' . wp_create_nonce( plugin_basename( __FILE__ ) ) . '" />'; // security nonce
+		value="' . wp_create_nonce( plugin_basename( PLAYERS_PATH ) ) . '" />'; // security nonce
 		
 	players_meta_box( 'units' );
 }
@@ -1890,7 +1894,7 @@ function players_sortable_item( $unit, $index ) {
 function players_save( $post_id ) {
 	global $players_interface, $players_controllers;
 	
-	if (!isset( $_POST['players_noncename'] ) || !wp_verify_nonce( $_POST['players_noncename'], plugin_basename( __FILE__ ) ) // security check
+	if (!isset( $_POST['players_noncename'] ) || !wp_verify_nonce( $_POST['players_noncename'], plugin_basename( PLAYERS_PATH ) ) // security check
 		|| defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE // avoid auto save routine
 		|| 'page' == $_POST['post_type'] && !(current_user_can( 'edit_page', $post_id ) || current_user_can( 'edit_post', $post_id )) // check permissions
 		|| !players_verify_post_type()) return $post_id; // verify post type
@@ -2078,7 +2082,7 @@ function players_post_admin_print_scripts() {
 	wp_enqueue_script( 'jquery-ui-core' );
 	wp_enqueue_script( 'jquery-ui-sortable' );
 	wp_enqueue_script( 'jquery-ui-widget' );
-	wp_enqueue_script( 'jquery-ajaxuploader', plugins_url( 'assets/ajaxupload.js', __FILE__ ) );
+	wp_enqueue_script( 'jquery-ajaxuploader', plugins_url( 'assets/ajaxupload.js', PLAYERS_PATH ) );
 }
 add_action( 'admin_print_scripts-post.php', 'players_post_admin_print_scripts' );
 add_action( 'admin_print_scripts-post-new.php', 'players_post_admin_print_scripts' );
@@ -2331,7 +2335,7 @@ function players_post_admin_head() {
 				new AjaxUpload( $('a#uploadlink'), {
 					action: ajaxurl,
 					name: fid,
-					data: { action: 'players_handle_upload_ajax', _ajax_nonce: '<?php echo wp_create_nonce( plugin_basename( __FILE__ ) ); ?>', file_id: fid },
+					data: { action: 'players_handle_upload_ajax', _ajax_nonce: '<?php echo wp_create_nonce( plugin_basename( PLAYERS_PATH ) ); ?>', file_id: fid },
 					responseType: 'json',
 					onSubmit: function( file , ext ) {
 						if( ext && /^(jpg|png|jpeg|gif)$/.test( ext ) ) {
@@ -2569,13 +2573,13 @@ function players_post_admin_head() {
 		}
 		div.scrollingHotSpotLeft	{
 			left: 0;
-			background-image: url(<?php echo plugins_url( 'assets/images/arrow_left.gif', __FILE__ ); ?>);
-			cursor: url(<?php echo plugins_url( 'assets/images/cursors/cursor_arrow_left.cur', __FILE__ ); ?>), w-resize;
+			background-image: url(<?php echo plugins_url( 'assets/images/arrow_left.gif', PLAYERS_PATH ); ?>);
+			cursor: url(<?php echo plugins_url( 'assets/images/cursors/cursor_arrow_left.cur', PLAYERS_PATH ); ?>), w-resize;
 		}
 		div.scrollingHotSpotRight {
 			right: 0;
-			background-image: url(<?php echo plugins_url( 'assets/images/arrow_right.gif', __FILE__ ); ?>);
-			cursor: url(<?php echo plugins_url( 'assets/images/cursors/cursor_arrow_right.cur', __FILE__ ); ?>), w-resize;
+			background-image: url(<?php echo plugins_url( 'assets/images/arrow_right.gif', PLAYERS_PATH ); ?>);
+			cursor: url(<?php echo plugins_url( 'assets/images/cursors/cursor_arrow_right.cur', PLAYERS_PATH ); ?>), w-resize;
 		}
 		
 		/* interface */
@@ -2605,7 +2609,7 @@ function players_post_admin_head() {
 		div.players_controller { display:none; }
 		p.subopt {
 			padding-left:11px;
-			background: url(<?php echo plugins_url( 'assets/images/dr_arrow.png', __FILE__ ); ?>) no-repeat;
+			background: url(<?php echo plugins_url( 'assets/images/dr_arrow.png', PLAYERS_PATH ); ?>) no-repeat;
 		}
 		p.less-margin { margin-top:0 !important; margin-bottom:0 !important; }
 		p.hint { border-left:1px solid #CCC; margin-left:8px !important; padding-left:3px; }
@@ -2617,7 +2621,7 @@ add_action( 'admin_head-post-new.php', 'players_post_admin_head' );
 
 // Handle Files Uploaded Via Ajax
 function players_handle_upload_ajax() {
-	check_ajax_referer( plugin_basename( __FILE__ ) ); // security
+	check_ajax_referer( plugin_basename( PLAYERS_PATH ) ); // security
 	
 	$error = $result = '';
 	if (!isset( $_REQUEST['file_id'] )) $error = 'No file_id found.';

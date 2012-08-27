@@ -39,7 +39,7 @@ License: GPL2
 // Add lazyload
 function lazyload_template_redirect() {
 	wp_enqueue_script( 'jquery' ); // lazyload.js is jquery agnostic but jquery is used to wait for the document/window to be ready and to trigger scriptsLoaded
-	wp_enqueue_script( 'lazyload', plugins_url( 'lazyload-min.js', __FILE__ ) );
+	wp_enqueue_script( 'lazyload', plugins_url( 'lazyload/lazyload-min.js', PLAYERS_ASSETS_PATH ) );
 }
 add_action( 'template_redirect', 'lazyload_template_redirect' );
 

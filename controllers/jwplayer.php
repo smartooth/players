@@ -87,7 +87,7 @@ add_action( 'admin_head-player_page_options', 'jwplayer_options_admin_head' );
 // Handle Ajax Request To Create Or Delete The Crossdomain File
 function jwplayer_crossdomain() {
 	if (!file_exists( $file = ($_SERVER['DOCUMENT_ROOT'] . '/crossdomain.xml') ))
-		die( (copy( plugins_url( 'jwplayer/crossdomain.xml', __FILE__ ), $file ) ? 'delete' : 'error') );
+		die( (copy( plugins_url( 'jwplayer/crossdomain.xml', PLAYERS_CONTROLLERS_PATH ), $file ) ? 'delete' : 'error') );
 	else
 		die( (@unlink( $file ) ? 'create' : 'error') );
 }
@@ -95,7 +95,7 @@ add_action( 'wp_ajax_jwplayer_crossdomain', 'jwplayer_crossdomain' );
 
 // Necessary Adding Of Script To Head
 function jwplayer_template_redirect() {
-	wp_enqueue_script( 'jwplayerjs', plugins_url( 'jwplayer/jwplayer.js', __FILE__ ) ); // jwplayer fails in IE if this script is added using lazy load
+	wp_enqueue_script( 'jwplayerjs', plugins_url( 'jwplayer/jwplayer.js', PLAYERS_CONTROLLERS_PATH ) ); // jwplayer fails in IE if this script is added using lazy load
 }
 add_action( 'template_redirect', 'jwplayer_template_redirect' );
 
@@ -205,7 +205,7 @@ function players_jwplayer_shortcode( $uid, $title, $dimensions, $options, $attac
 	
 	players_footerjs( 'id_' . $uid,
 		'jwplayer( "id_' . $uid . '" ).setup({
-			"flashplayer": "' . plugins_url( 'jwplayer/player.swf', __FILE__ ) . '",
+			"flashplayer": "' . plugins_url( 'jwplayer/player.swf', PLAYERS_CONTROLLERS_PATH ) . '",
 			"width": "' . $dimensions['width'] . '",
 			"height": "' . $dimensions['height'] . '",
 			"backcolor": "' . jwplayer_color( $options['bcolor'] ) . '",

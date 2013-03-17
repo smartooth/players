@@ -43,7 +43,7 @@ function lazyload_template_redirect() {
 }
 add_action( 'template_redirect', 'lazyload_template_redirect' );
 
-// Add Javascript/CSS To Footer On Front End Only
+// Add JavaScript/CSS To Footer On Front End Only
 function lazyload_footer() {	
 	global $wp_styles, $wp_scripts;
 	

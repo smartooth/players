@@ -1,14 +1,14 @@
 <?php
-//error_reporting( E_ALL | E_STRICT );
+error_reporting( E_ALL | E_STRICT );
 /*
 Plugin Name: Players
 Description: Feature media using various content players. Each player can be customized with many options and effects. This plugin creates a custom post type called Players which integrates with the Media Library. To embed a player into a post or page, simply insert <code>[player id=""]</code> anywhere in the post or page content.
 Version: 1.0.0
-Author: Joel Kuczmarski
-Author URI: http://www.joelak.com
+Author: Joel Kuzmarski
+Author URI: http://www.github.com/leoj3n
 License: GPL2
 
-    Copyright 2012  Joel KUCZMARSKI  (email : leoj3n at gmail dot com)
+    Copyright 2013  Joel KUZMARSKI  (email : leoj3n at gmail dot com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License, version 2, as 
@@ -77,6 +77,8 @@ function players_install() {
 	players_update_option( 'automatic', 'enabled' );
 	players_update_option( 'screenshot', 50 );
 	players_update_option( 'sequence', 0 );
+	players_update_option( 'debug', false );
+	players_update_option( 'sample', false );
 	players_update_option( 'ffmpeg_path', 'ffmpeg' );
 	players_update_option( 'flvtool2_path', 'flvtool2' );
 	players_update_option( 'qtfaststart_path', 'qt-faststart' );
@@ -99,7 +101,7 @@ function players_upgrade() {
 if (version_compare( $user_version, $file_version, '<' )) players_upgrade();
 
 /************************************************************************************************
- *									BEGIN VIDEO								 *
+ *									BEGIN VIDEO								                    *
  ************************************************************************************************/
  
  // Verify That Exec Is Supported
@@ -182,7 +184,7 @@ function players_get_video_dimensions( $video ) {
 		
 		$stats = str_replace( basename( $video ), '', $stats ); // remove filename from result incase of dimension string in filename
 		
-		ereg( '[0-9]?[0-9][0-9][0-9]x[0-9][0-9][0-9][0-9]?', $stats, $matches );
+		preg_match( '/[0-9]?[0-9][0-9][0-9]x[0-9][0-9][0-9][0-9]?/', $stats, $matches );
 		
 		if( isset( $matches[0] ) ) {
 			$vals = explode( 'x', $matches[0] );
@@ -266,7 +268,7 @@ function players_video_metadata( $data, $post_id ) {
 	
 	if( isset( $post ) && players_is_video( $post->post_mime_type ) ) { // only execute the following for video files
 		// do some location checking
-		switch( is_numeric( $_POST['id'] ) ) {
+		switch( !empty( $_POST['id'] ) && is_numeric( $_POST['id'] ) ) {
 			case false: // from media-new.php
 				if (players_get_option( 'automatic' ) !== 'enabled') return $data; // cancel encode
 				break;
@@ -631,8 +633,8 @@ add_filter( 'delete_attachment', 'players_video_delete', 10, 1 );
 
 // Return Encode Directory For A Video Attachment
 function players_get_directory( $id ) {
-	$metadata = wp_get_attachment_metadata( $id );		
-	return (is_string( $metadata['directory'] ) ? $metadata['directory'] : false);
+	$metadata = wp_get_attachment_metadata( $id );
+	return ((!empty( $metadata['directory'] ) && is_string( $metadata['directory'] )) ? $metadata['directory'] : false);
 }
 
 // Return Screenshots For A Video Attachment
@@ -971,6 +973,8 @@ add_action( 'manage_media_custom_column', 'players_do_upload_columns', 1, 2 );
 function players_video_dequeue( $id ) {
 	$queue = players_get_option( 'ffmpeg_queue' );
 	
+	if (!is_array( $queue )) return 0; // stop here if not an array
+
 	$result = ($queue[0]['id'] == $id); // was currently being encoded
 	
 	foreach( $queue as $index => $item ) {
@@ -1176,6 +1180,7 @@ function players_tf( $val, $type = 'int' ) {
 // Utility: Generate A Checkbox
 function players_checkbox( $value, $label, $name, $checked = '', $class ) {
 	return '<p class="less-margin' . (!empty( $class ) ? ' ' . $class : '') . '">
+		<input type="hidden" name="' . $name . '[' . $value . ']" value="0" />
 		<input type="checkbox" name="' . $name . '[' . $value . ']" id="' . $name . '[' . $value . ']" 
 		value="' . $value . '"' . ($value == $checked ? 'checked="checked"' : '') . ' /> 
 		<label for="' . $name . '[' . $value . ']">' . $label . '</label></p>';
@@ -1296,7 +1301,7 @@ function players_get_option( $option ) {
 	global $players_options;
 	
 	$options = get_option( $players_options );
-	
+
 	return (is_string( $options[$option] ) ? stripslashes( $options[$option] ) : $options[$option]);
 }
 
@@ -2592,7 +2597,7 @@ function players_post_admin_head() {
 		}
 		input.pixelfield { width:44px; }
 		input.urlfield { width:155px; }
-		#uploaddiv { position:absolute; top:-28px; left:110px; }
+		#uploaddiv { position:absolute; top:-33px; left:110px; }
 		#libraryFilters { margin-top:8px; text-align:left; overflow:auto; }
 		#libraryFilters div {
 			margin-top:6px;

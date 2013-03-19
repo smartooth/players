@@ -1,5 +1,5 @@
 <?php
-error_reporting( E_ALL | E_STRICT );
+//error_reporting( E_ALL | E_STRICT );
 /*
 Plugin Name: Players
 Description: Feature media using various content players. Each player can be customized with many options and effects. This plugin creates a custom post type called Players which integrates with the Media Library. To embed a player into a post or page, simply insert <code>[player id=""]</code> anywhere in the post or page content.
@@ -70,6 +70,7 @@ $players_options = apply_filters( 'players_options', 'players_options' );
 $players_options_page = apply_filters( 'players_options_page', 'options' );
 $file_version = '1.0.0'; // should match the "Version" definition in the header of this file
 //delete_option( 'players_options' ); // hack for testing: resets version
+//players_install();
 $user_version = players_get_option( 'version' );
 
 // First Run Function On Plugin Activation
